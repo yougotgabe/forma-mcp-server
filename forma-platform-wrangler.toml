@@ -1,0 +1,16 @@
+name = "forma-platform"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# All secrets are set via `wrangler secret put` — never hardcoded here.
+# Required secrets:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   ENCRYPTION_KEY          (32-byte hex string — generate with: openssl rand -hex 32)
+#   WORKER_SECRET           (shared secret — all callers must send this in x-worker-secret header)
+#   NOTIFY_EMAIL            (operator direct inbox — NOT a routed address, see KB §2.4)
+#   RESEND_API_KEY
+#   GITHUB_TOKEN            (operator GitHub token for provisioning client repos)
+#   CLOUDFLARE_API_TOKEN    (operator CF token for provisioning Pages projects)
+#   CLOUDFLARE_ACCOUNT_ID
+#   SUPABASE_MGMT_TOKEN     (operator Supabase Management API token for provisioning)
