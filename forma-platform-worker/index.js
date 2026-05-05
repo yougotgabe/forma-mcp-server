@@ -9,6 +9,7 @@
 //   POST /signals          — write tech + style signals at session end
 //   POST /service-request  — log out-of-scope request, notify operator
 //   POST /encrypt          — encrypt and store a client credential
+//   POST /decrypt          — decrypt a stored credential (server jobs only, never browser)
 //   POST /provision        — create GitHub repo, CF Pages project, client Supabase schema
 //
 // All endpoints require x-worker-secret header matching WORKER_SECRET env var.
@@ -46,7 +47,10 @@ export default {
       if (path === '/signals')         return handleSignals(body, env);
       if (path === '/service-request') return handleServiceRequest(body, env);
       if (path === '/encrypt')         return handleEncrypt(body, env);
+      if (path === '/decrypt')         return handleDecrypt(body, env);
       if (path === '/provision')       return handleProvision(body, env);
+      if (path === '/usage')           return handleUsage(body, env);
+      if (path === '/usage/check')     return handleUsageCheck(body, env);
       return json({ error: 'Not found' }, 404);
     } catch (err) {
       console.error(`[${path}] Unhandled error:`, err);
@@ -440,6 +444,34 @@ async function handleEncrypt(body, env) {
 }
 
 
+
+// =============================================================================
+// ENDPOINT: POST /decrypt
+// =============================================================================
+// Decrypts a stored credential value.
+// Called ONLY by server-side provisioning and build jobs — never from the browser.
+// The decrypted value is used in-process by the calling job and never logged,
+// returned to clients, or stored anywhere in plaintext.
+//
+// Body:     { ciphertext: string }   — the base64 blob stored in clients table
+// Response: { value: string }        — plaintext; use immediately and discard
+// =============================================================================
+
+async function handleDecrypt(body, env) {
+  const { ciphertext } = body;
+  if (!ciphertext || typeof ciphertext !== 'string') {
+    return json({ error: 'ciphertext required' }, 400);
+  }
+  try {
+    const value = await decrypt(ciphertext, env.ENCRYPTION_KEY);
+    // Do not log the decrypted value under any circumstances
+    return json({ value });
+  } catch {
+    // Generic error only — never surface decryption internals
+    return json({ error: 'Decryption failed' }, 422);
+  }
+}
+
 // =============================================================================
 // ENDPOINT: POST /provision
 // =============================================================================
@@ -706,6 +738,363 @@ async function handleProvision(body, env) {
 
 
 // =============================================================================
+// ENDPOINT: POST /usage
+// =============================================================================
+// Called at the end of every agent conversation to record token consumption.
+// Tracks monthly usage, rolling 7-day velocity, conversation type weighting,
+// trend direction, and efficiency metrics for margin health monitoring.
+//
+// Body: {
+//   slug: "client-slug",
+//   input_tokens: 45000,
+//   output_tokens: 8000,
+//   model: "claude-sonnet-4-20250514" | "claude-haiku-4-5-20251001",
+//   cached_tokens: 20000,
+//   conversation_type: "build" | "maintenance" | "redesign" | "extraction"
+// }
+// =============================================================================
+
+// Pricing per million tokens (update when Anthropic changes pricing)
+const MODEL_PRICING = {
+  'claude-sonnet-4-20250514': {
+    input:       3.00,
+    output:      15.00,
+    cache_write: 3.75,
+    cache_read:  0.30,
+  },
+  'claude-haiku-4-5-20251001': {
+    input:       0.80,
+    output:      4.00,
+    cache_write: 1.00,
+    cache_read:  0.08,
+  },
+};
+
+// Internal margin guardrail — max cost per client per month
+const MARGIN_GUARDRAIL = {
+  standard: { monthly_revenue: 5000, max_cost_cents: 1500 }, // $50/mo, max $15
+  pro:      { monthly_revenue: 10000, max_cost_cents: 3500 }, // $100/mo, max $35
+};
+
+// Threshold percentages
+const SOFT_THRESHOLD_PCT  = 0.70;  // suggest efficiency at 70%
+const HARD_THRESHOLD_PCT  = 0.90;  // offer overflow at 90%
+const KILL_THRESHOLD_PCT  = 1.50;  // require confirmation at 150%
+
+// Conversation type weights — how much each type counts toward thresholds
+// Build and redesign are expected to be heavy — relax their threshold impact
+// Maintenance sitting at 85% repeatedly is more concerning than one big build
+const CONV_TYPE_WEIGHT = {
+  build:       0.70,  // expected heavy — weight down 30%
+  redesign:    0.75,  // expected heavy — weight down 25%
+  maintenance: 1.20,  // unexpected heavy — weight up 20%
+  extraction:  0.30,  // always light — barely counts
+};
+
+// Rolling 7-day velocity thresholds (cents)
+const VELOCITY_SOFT = 800;  // $8 in 7 days is elevated
+const VELOCITY_HARD = 1200; // $12 in 7 days is concerning
+
+function calculateCostCents(inputTokens, outputTokens, cachedTokens, model) {
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING['claude-sonnet-4-20250514'];
+  const uncachedInput = Math.max(0, inputTokens - cachedTokens);
+  const costDollars =
+    (uncachedInput  / 1_000_000) * pricing.input +
+    (cachedTokens   / 1_000_000) * pricing.cache_read +
+    (outputTokens   / 1_000_000) * pricing.output;
+  return Math.round(costDollars * 100);
+}
+
+// Weighted cost for threshold calculation — same actual cost stored, different threshold impact
+function weightedCost(costCents, conversationType) {
+  const weight = CONV_TYPE_WEIGHT[conversationType] || 1.0;
+  return Math.round(costCents * weight);
+}
+
+function buildAgentGuidance(effectivePct, velocityPct, tier, conversationType) {
+  // Kill switch — 150% of guardrail, regardless of conversation type
+  if (effectivePct >= KILL_THRESHOLD_PCT) {
+    return {
+      threshold:        'kill',
+      require_confirm:  true,
+      message:          "Looks like we've been doing a lot of heavy lifting lately — want to continue with extended capacity today?",
+      suggest_overflow: true,
+      estimated_overflow_cost: '$2–5',
+      internal_note:    'Client at 150%+ of cost guardrail. Require explicit confirmation before proceeding with any session. Log this session for operator review.',
+    };
+  }
+
+  // Hard threshold — 90% of guardrail
+  if (effectivePct >= HARD_THRESHOLD_PCT) {
+    return {
+      threshold:        'hard',
+      require_confirm:  false,
+      message:          conversationType === 'build'
+        ? "This is a full build — that's expected to take some capacity. Want me to proceed, or break it into stages across a couple of sessions?"
+        : "This is a bigger task than usual. I can continue, or we can break it into focused sessions for the best results — your call.",
+      suggest_overflow: true,
+      estimated_overflow_cost: '$1–3',
+      internal_note:    'Present overflow option naturally. Do not make client feel penalized.',
+    };
+  }
+
+  // Soft threshold — 70% of guardrail OR high velocity
+  const velocityElevated = velocityPct >= VELOCITY_SOFT;
+  if (effectivePct >= SOFT_THRESHOLD_PCT || velocityElevated) {
+    return {
+      threshold:        'soft',
+      require_confirm:  false,
+      message:          'This is shaping up to be a bigger task. Want me to break it into steps so each part gets full attention?',
+      suggest_overflow: false,
+      internal_note:    velocityElevated
+        ? 'High recent velocity — favor short focused conversations, cache aggressively.'
+        : 'Approaching monthly capacity — prefer efficiency, suggest breaking complex requests into steps.',
+    };
+  }
+
+  return null; // normal — no guidance needed
+}
+
+async function handleUsage(body, env) {
+  const {
+    slug,
+    input_tokens     = 0,
+    output_tokens    = 0,
+    cached_tokens    = 0,
+    model            = 'claude-sonnet-4-20250514',
+    conversation_type = 'maintenance',
+  } = body;
+
+  if (!slug) return json({ error: 'slug required' }, 400);
+
+  // Resolve client + plan
+  const clientRes = await supabase(env, 'GET',
+    `/rest/v1/clients?slug=eq.${encodeURIComponent(slug)}&select=id,tier&limit=1`
+  );
+  const clients = clientRes.ok ? await clientRes.json() : [];
+  if (!clients.length) return json({ error: 'Client not found' }, 404);
+  const { id: clientId, tier } = clients[0];
+
+  const actualCostCents  = calculateCostCents(input_tokens, output_tokens, cached_tokens, model);
+  const weighted         = weightedCost(actualCostCents, conversation_type);
+  const monthKey         = new Date().toISOString().slice(0, 7);
+  const now              = new Date().toISOString();
+
+  // Write individual conversation record for rolling window + trend analysis
+  await supabase(env, 'POST', '/rest/v1/client_usage_log', {
+    client_id:         clientId,
+    client_slug:       slug,
+    month_key:         monthKey,
+    conversation_type,
+    actual_cost_cents: actualCostCents,
+    weighted_cost_cents: weighted,
+    input_tokens,
+    output_tokens,
+    cached_tokens,
+    model,
+    recorded_at:       now,
+  });
+
+  // Upsert monthly summary — actual costs only (weighted is for threshold logic only)
+  await supabase(env, 'POST', '/rest/v1/client_usage',
+    {
+      client_id:            clientId,
+      client_slug:          slug,
+      month_key:            monthKey,
+      total_cost_cents:     actualCostCents,
+      weighted_cost_cents:  weighted,
+      input_tokens,
+      output_tokens,
+      cached_tokens,
+      conversation_count:   1,
+    },
+    { Prefer: 'resolution=merge-duplicates,return=representation' }
+  );
+
+  // Fetch updated monthly totals
+  const totalRes = await supabase(env, 'GET',
+    `/rest/v1/client_usage?client_slug=eq.${encodeURIComponent(slug)}&month_key=eq.${monthKey}&select=total_cost_cents,weighted_cost_cents,conversation_count&limit=1`
+  );
+  const totals        = totalRes.ok ? await totalRes.json() : [];
+  const monthTotal    = totals[0]?.total_cost_cents    || actualCostCents;
+  const weightedTotal = totals[0]?.weighted_cost_cents || weighted;
+  const convCount     = totals[0]?.conversation_count  || 1;
+
+  // Rolling 7-day velocity — sum actual costs from last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const velocityRes  = await supabase(env, 'GET',
+    `/rest/v1/client_usage_log?client_slug=eq.${encodeURIComponent(slug)}&recorded_at=gte.${sevenDaysAgo}&select=actual_cost_cents`
+  );
+  const velocityRows  = velocityRes.ok ? await velocityRes.json() : [];
+  const velocity7d    = velocityRows.reduce((sum, r) => sum + (r.actual_cost_cents || 0), 0);
+
+  // Trend: compare this month's cost rate to last month's
+  const lastMonth     = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const lastMonthKey  = lastMonth.toISOString().slice(0, 7);
+  const lastRes       = await supabase(env, 'GET',
+    `/rest/v1/client_usage?client_slug=eq.${encodeURIComponent(slug)}&month_key=eq.${lastMonthKey}&select=total_cost_cents,conversation_count&limit=1`
+  );
+  const lastRows      = lastRes.ok ? await lastRes.json() : [];
+  const lastMonthCost = lastRows[0]?.total_cost_cents || 0;
+  const lastConvCount = lastRows[0]?.conversation_count || 1;
+  const thisAvgCost   = convCount     > 0 ? monthTotal    / convCount     : 0;
+  const lastAvgCost   = lastConvCount > 0 ? lastMonthCost / lastConvCount : 0;
+  const trendDirection = thisAvgCost > lastAvgCost * 1.2 ? 'rising'
+    : thisAvgCost < lastAvgCost * 0.8 ? 'falling' : 'stable';
+
+  // Compute thresholds using weighted cost for fairness
+  const guardrail    = MARGIN_GUARDRAIL[tier] || MARGIN_GUARDRAIL.standard;
+  const effectivePct = weightedTotal / guardrail.max_cost_cents;
+  const agentGuidance = buildAgentGuidance(effectivePct, velocity7d, tier, conversation_type);
+
+  // Flag for operator review if kill threshold hit
+  if (effectivePct >= KILL_THRESHOLD_PCT) {
+    await supabase(env, 'POST', '/rest/v1/client_usage_flags', {
+      client_id:    clientId,
+      client_slug:  slug,
+      month_key:    monthKey,
+      flag_type:    'kill_threshold',
+      effective_pct: Math.round(effectivePct * 100),
+      flagged_at:   now,
+    });
+  }
+
+  return json({
+    ok:                    true,
+    actual_cost_cents:     actualCostCents,
+    month_total_cents:     monthTotal,
+    weighted_total_cents:  weightedTotal,
+    conversation_count:    convCount,
+    velocity_7d_cents:     velocity7d,
+    trend_direction:       trendDirection,
+    effective_pct:         Math.round(effectivePct * 100),
+    threshold:             effectivePct >= KILL_THRESHOLD_PCT ? 'kill'
+                         : effectivePct >= HARD_THRESHOLD_PCT ? 'hard'
+                         : effectivePct >= SOFT_THRESHOLD_PCT ? 'soft' : 'normal',
+    agent_guidance:        agentGuidance,
+  });
+}
+
+
+// =============================================================================
+// ENDPOINT: POST /usage/check
+// =============================================================================
+// Called at the START of every conversation.
+// Returns full usage context so the agent can calibrate tone and task approach
+// before the client says a single word.
+//
+// Body: { slug: "client-slug" }
+// =============================================================================
+
+async function handleUsageCheck(body, env) {
+  const { slug } = body;
+  if (!slug) return json({ error: 'slug required' }, 400);
+
+  const clientRes = await supabase(env, 'GET',
+    `/rest/v1/clients?slug=eq.${encodeURIComponent(slug)}&select=id,tier&limit=1`
+  );
+  const clients = clientRes.ok ? await clientRes.json() : [];
+  if (!clients.length) return json({ error: 'Client not found' }, 404);
+  const { id: clientId, tier } = clients[0];
+
+  const monthKey = new Date().toISOString().slice(0, 7);
+
+  // Monthly totals
+  const totalRes = await supabase(env, 'GET',
+    `/rest/v1/client_usage?client_slug=eq.${encodeURIComponent(slug)}&month_key=eq.${monthKey}&select=total_cost_cents,weighted_cost_cents,conversation_count&limit=1`
+  );
+  const totals        = totalRes.ok ? await totalRes.json() : [];
+  const monthTotal    = totals[0]?.total_cost_cents    || 0;
+  const weightedTotal = totals[0]?.weighted_cost_cents || 0;
+  const convCount     = totals[0]?.conversation_count  || 0;
+
+  // Rolling 7-day velocity
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const velocityRes  = await supabase(env, 'GET',
+    `/rest/v1/client_usage_log?client_slug=eq.${encodeURIComponent(slug)}&recorded_at=gte.${sevenDaysAgo}&select=actual_cost_cents,conversation_type`
+  );
+  const velocityRows = velocityRes.ok ? await velocityRes.json() : [];
+  const velocity7d   = velocityRows.reduce((sum, r) => sum + (r.actual_cost_cents || 0), 0);
+
+  // Last 3 sessions cost trend
+  const recentRes  = await supabase(env, 'GET',
+    `/rest/v1/client_usage_log?client_slug=eq.${encodeURIComponent(slug)}&order=recorded_at.desc&limit=3&select=actual_cost_cents,conversation_type,recorded_at`
+  );
+  const recentSessions = recentRes.ok ? await recentRes.json() : [];
+  const recentAvg      = recentSessions.length
+    ? recentSessions.reduce((s, r) => s + r.actual_cost_cents, 0) / recentSessions.length
+    : 0;
+
+  // Trend direction
+  const lastMonth    = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const lastMonthKey = lastMonth.toISOString().slice(0, 7);
+  const lastRes      = await supabase(env, 'GET',
+    `/rest/v1/client_usage?client_slug=eq.${encodeURIComponent(slug)}&month_key=eq.${lastMonthKey}&select=total_cost_cents,conversation_count&limit=1`
+  );
+  const lastRows      = lastRes.ok ? await lastRes.json() : [];
+  const lastMonthCost = lastRows[0]?.total_cost_cents    || 0;
+  const lastConvCount = lastRows[0]?.conversation_count  || 1;
+  const thisAvgCost   = convCount     > 0 ? monthTotal    / convCount     : 0;
+  const lastAvgCost   = lastConvCount > 0 ? lastMonthCost / lastConvCount : 0;
+  const trendDirection = thisAvgCost > lastAvgCost * 1.2 ? 'rising'
+    : thisAvgCost < lastAvgCost * 0.8 ? 'falling' : 'stable';
+
+  const guardrail    = MARGIN_GUARDRAIL[tier] || MARGIN_GUARDRAIL.standard;
+  const effectivePct = weightedTotal / guardrail.max_cost_cents;
+  const velocityHigh = velocity7d >= VELOCITY_SOFT;
+
+  // Build start-of-session agent note
+  let agentNote = null;
+  if (effectivePct >= KILL_THRESHOLD_PCT) {
+    agentNote = {
+      threshold:       'kill',
+      require_confirm: true,
+      note:            'Client is at 150%+ of cost guardrail. Before starting ANY task, surface the confirmation message. Do not proceed without explicit yes from client.',
+      message:         "Looks like we've been doing a lot of heavy lifting lately — want to continue with extended capacity today?",
+    };
+  } else if (effectivePct >= HARD_THRESHOLD_PCT || velocity7d >= VELOCITY_HARD) {
+    agentNote = {
+      threshold:       'hard',
+      require_confirm: false,
+      note:            'Client is near capacity or has high recent velocity. Open with a focused task question. Avoid open-ended offers. Suggest breaking large requests into steps immediately.',
+    };
+  } else if (effectivePct >= SOFT_THRESHOLD_PCT || velocityHigh) {
+    agentNote = {
+      threshold:       'soft',
+      require_confirm: false,
+      note:            'Client approaching capacity or elevated recent velocity. Favor short focused conversations. Cache aggressively. Gently suggest step-by-step approach for complex requests.',
+    };
+  } else if (trendDirection === 'rising' && convCount >= 3) {
+    agentNote = {
+      threshold:       'watch',
+      require_confirm: false,
+      note:            'Client cost trend is rising month-over-month. No action needed yet — just be efficient. Flag if trend continues.',
+    };
+  }
+
+  return json({
+    ok:                  true,
+    month_key:           monthKey,
+    month_total_cents:   monthTotal,
+    weighted_total_cents: weightedTotal,
+    conversation_count:  convCount,
+    velocity_7d_cents:   velocity7d,
+    recent_avg_cents:    Math.round(recentAvg),
+    recent_sessions:     recentSessions,
+    trend_direction:     trendDirection,
+    effective_pct:       Math.round(effectivePct * 100),
+    threshold:           effectivePct >= KILL_THRESHOLD_PCT ? 'kill'
+                       : effectivePct >= HARD_THRESHOLD_PCT ? 'hard'
+                       : effectivePct >= SOFT_THRESHOLD_PCT ? 'soft'
+                       : trendDirection === 'rising'         ? 'watch' : 'normal',
+    agent_note:          agentNote,
+  });
+}
+
+
+// =============================================================================
 // SHARED UTILITIES
 // =============================================================================
 
@@ -713,10 +1102,11 @@ async function handleProvision(body, env) {
 async function supabase(env, method, path, body = null, extraHeaders = {}) {
   const url = env.SUPABASE_URL + path;
   const headers = {
-    'apikey':        env.SUPABASE_SERVICE_ROLE_KEY,
-    'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-    'Content-Type':  'application/json',
-    'Prefer':        'return=minimal',
+    'apikey':       env.SUPABASE_SERVICE_ROLE_KEY,
+    // No Authorization header — Supabase gateway translates the apikey
+    // internally. Sending sb_secret_... as Bearer causes 403.
+    'Content-Type': 'application/json',
+    'Prefer':       'return=minimal',
     ...extraHeaders,
   };
   const init = { method, headers };
@@ -781,7 +1171,7 @@ async function sendEmail(env, { to, subject, text }) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from:    'Forma <notifications@forma.build>',
+        from:    'Formaut <notifications@formaut.com>',
         to:      [to],
         subject,
         text,
