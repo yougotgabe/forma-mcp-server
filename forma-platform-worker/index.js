@@ -1,4 +1,5 @@
 import { routeDashboardMessage } from './chat-cost-gate.js';
+import { publishVersionToGitHub, resolveClientSlug } from './github-publish-adapter.js';
 import { guardScope } from './formaut-scope-guard.js';
 import {
   produceJob,
@@ -634,6 +635,110 @@ async function handleArtifactLineage(body, env) {
 
 async function handleResolvePublishBlocker(body, env) {
   return json(await resolvePublishBlocker(body, env, artifactDeps(env)));
+}
+
+// =============================================================================
+// ENDPOINTS: Artifact Pipeline (versions, reviews, publish, rollback)
+// =============================================================================
+
+async function handleArtifactVersionCreate(body, env) {
+  return json(await createArtifactVersion(body, env, artifactPipelineDeps(env)));
+}
+
+async function handleArtifactVersionsList(body, env) {
+  return json(await listArtifactVersions(body, env, artifactPipelineDeps(env)));
+}
+
+async function handleArtifactReviewsList(body, env) {
+  return json(await listReviewQueue(body, env, artifactPipelineDeps(env)));
+}
+
+async function handleArtifactReviewDecision(body, env) {
+  return json(await reviewArtifactVersion(body, env, artifactPipelineDeps(env)));
+}
+
+/**
+ * POST /artifacts/publish
+ *
+ * 1. Runs the DB-layer publish (marks version published, writes publish_transaction)
+ * 2. Writes the artifact content to the client's GitHub repo via Contents API
+ * 3. Optionally triggers a Cloudflare Pages deploy
+ * 4. Records the GitHub commit SHA back into the publish_transaction
+ *
+ * Body: { artifact_version_id, actor?, reason?, skip_github? }
+ *
+ * skip_github=true lets you do a dry-run DB-only publish (useful in tests).
+ */
+async function handleArtifactPublish(body, env) {
+  // Step 1: DB publish — marks version as published, creates publish_transaction
+  const publishResult = await publishArtifactVersion(body, env, artifactPipelineDeps(env));
+
+  if (!publishResult.ok) return json(publishResult);
+
+  // Step 2: Skip GitHub write if explicitly requested (testing / staging env)
+  if (body.skip_github === true) {
+    return json({ ...publishResult, github: { skipped: true } });
+  }
+
+  // Step 3: Write artifact content to GitHub
+  const version = publishResult.artifact_version;
+  try {
+    // Ensure we have a client_slug — fall back to DB lookup if needed
+    if (!version.client_slug && version.client_id) {
+      version.client_slug = await resolveClientSlug(version, env, supabase);
+    }
+
+    const githubResult = await publishVersionToGitHub(
+      version,
+      env,
+      supabase,
+      body.reason || null
+    );
+
+    // Step 4: Stamp the publish_transaction with the commit SHA for lineage
+    const txId = publishResult.publish_transaction?.id;
+    if (txId && githubResult.commit_sha) {
+      await supabase(env, 'PATCH',
+        `/rest/v1/publish_transactions?id=eq.${encodeURIComponent(txId)}`,
+        {
+          deployment_payload: {
+            ...(publishResult.publish_transaction?.deployment_payload || {}),
+            github_commit_sha:  githubResult.commit_sha,
+            github_file_path:   githubResult.file_path,
+            github_repo:        githubResult.repo,
+            github_commit_url:  githubResult.commit_url,
+            cloudflare_deploy:  githubResult.deploy,
+          },
+        }
+      );
+    }
+
+    return json({ ...publishResult, github: githubResult });
+
+  } catch (githubErr) {
+    // GitHub write failed — surface clearly but don't hide the DB publish
+    // The artifact is marked published in the DB; operator can retry the commit.
+    return json({
+      ...publishResult,
+      github: {
+        ok:    false,
+        error: githubErr.message,
+        note:  'Artifact is marked published in the database. GitHub write failed — retry with the same artifact_version_id.',
+      },
+    }, 207); // 207 Multi-Status: partial success
+  }
+}
+
+async function handleArtifactRollback(body, env) {
+  return json(await rollbackArtifact(body, env, artifactPipelineDeps(env)));
+}
+
+async function handleArtifactChangeDashboard(body, env) {
+  return json(await getChangeDashboard(body, env, artifactPipelineDeps(env)));
+}
+
+async function handleSelectiveRebuildPlan(body, env) {
+  return json(await planSelectiveRebuilds(body, env, artifactPipelineDeps(env)));
 }
 
 // =============================================================================
