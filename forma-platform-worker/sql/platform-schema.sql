@@ -2070,3 +2070,90 @@ grant select, insert, update, delete on table
   public.canonical_entities,
   public.rollout_events
  to service_role;
+
+-- ============================================================
+-- SECTION 16: CLIENT AGENT SYSTEM — v0 additions
+-- Run this patch against the platform Supabase project.
+-- Safe to re-run (all statements are idempotent).
+-- ============================================================
+
+-- Add agent_secret_hash to clients for per-client secret isolation.
+-- When populated, the platform verifies events from that client using
+-- this hash instead of the global FORMAUT_AGENT_SECRET env var.
+-- Allows rotating per-client secrets without touching the platform secret.
+alter table public.clients
+  add column if not exists agent_secret_hash  text,
+  add column if not exists agent_registered_at timestamptz,
+  add column if not exists agent_last_seen_at  timestamptz,
+  add column if not exists agent_status        text default 'none'
+    check (agent_status in ('none','registered','healthy','warn','attention','stale','disabled'));
+
+create index if not exists clients_agent_status_idx
+  on public.clients (agent_status)
+  where agent_status != 'none';
+
+-- Extend client_agent_runtimes with fields needed for operator panel.
+alter table public.client_agent_runtimes
+  add column if not exists pages_project   text,
+  add column if not exists site_url        text,
+  add column if not exists runtime_version text;
+
+-- Extend client_agent_events with protocol_version for forward compat.
+alter table public.client_agent_events
+  add column if not exists protocol_version text;
+
+-- View: operator panel agent health summary — one row per client.
+create or replace view public.agent_health_summary as
+select
+  r.client_slug,
+  c.display_name,
+  c.tier,
+  r.status                                    as agent_status,
+  r.agent_version,
+  r.schema_version,
+  r.runtime_mode,
+  r.capabilities,
+  r.last_seen_at,
+  r.last_event_id,
+  r.metadata,
+  -- Minutes since last heartbeat
+  extract(epoch from (now() - r.last_seen_at)) / 60 as minutes_since_heartbeat,
+  -- Most recent event severity
+  (
+    select e.severity
+    from   public.client_agent_events e
+    where  e.client_slug = r.client_slug
+    order  by e.received_at desc
+    limit  1
+  ) as last_event_severity,
+  (
+    select e.event_type
+    from   public.client_agent_events e
+    where  e.client_slug = r.client_slug
+    order  by e.received_at desc
+    limit  1
+  ) as last_event_type
+from public.client_agent_runtimes r
+left join public.clients c on c.slug = r.client_slug;
+
+grant select on public.agent_health_summary to service_role;
+
+-- Function: mark a client's agent status on the clients table
+-- whenever the runtime row is upserted. Keeps clients.agent_status
+-- in sync without a separate query.
+create or replace function public.sync_client_agent_status()
+returns trigger language plpgsql as $$
+begin
+  update public.clients
+  set
+    agent_status       = new.status,
+    agent_last_seen_at = new.last_seen_at
+  where slug = new.client_slug;
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_agent_status_to_clients on public.client_agent_runtimes;
+create trigger sync_agent_status_to_clients
+after insert or update on public.client_agent_runtimes
+for each row execute function public.sync_client_agent_status();

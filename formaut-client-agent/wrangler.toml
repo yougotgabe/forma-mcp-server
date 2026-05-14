@@ -2,13 +2,31 @@ name = "formaut-client-agent"
 main = "index.js"
 compatibility_date = "2026-05-14"
 
+# =============================================================================
+# PER-CLIENT VARS — safe to commit; no secrets here.
+# =============================================================================
 [vars]
-AGENT_VERSION = "0.1.0"
+AGENT_VERSION  = "0.1.0"
 SCHEMA_VERSION = "2026-05"
-# Required secrets:
-# CLIENT_SLUG
-# FORMAUT_CONTROL_PLANE_URL
-# FORMAUT_AGENT_SECRET
-# Optional vars/secrets:
-# SITE_URL
-# PAGES_PROJECT_NAME
+RUNTIME_MODE   = "stable"
+
+# =============================================================================
+# REQUIRED SECRETS — set via: wrangler secret put <NAME>
+# =============================================================================
+# CLIENT_SLUG                — matches platform clients.slug
+# FORMAUT_CONTROL_PLANE_URL  — platform worker URL (no trailing slash)
+# FORMAUT_AGENT_SECRET       — HMAC shared secret (must match platform FORMAUT_AGENT_SECRET)
+#
+# OPTIONAL SECRETS / VARS
+# SITE_URL                   — primary site URL for HTTP health checks
+# PAGES_PROJECT_NAME         — Cloudflare Pages project name (used to derive pages URL)
+# PAGES_URL                  — override pages URL if different from <project>.pages.dev
+
+# =============================================================================
+# CRON TRIGGERS
+# =============================================================================
+[triggers]
+crons = [
+  "*/5 * * * *",   # heartbeat + health check every 5 minutes
+  "0 * * * *",     # capability report every hour
+]

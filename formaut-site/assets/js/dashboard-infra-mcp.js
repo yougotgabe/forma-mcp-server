@@ -246,6 +246,14 @@ async function loadMcp() {
   document.getElementById('mcp-endpoint-card').style.display  = isRuntime ? 'block' : 'none';
   document.getElementById('mcp-scopes-section').style.display = isRuntime ? 'block' : 'none';
 
+  // Show agent health panel for operator users
+  const isOperator = Boolean(clientCtx.is_operator || window.__formautOperator);
+  const agentHealthEl = document.getElementById('client-agent-health-section');
+  if (agentHealthEl) {
+    agentHealthEl.style.display = isOperator ? 'block' : 'none';
+    if (isOperator) loadClientAgentHealth();
+  }
+
   loading.style.display = 'block';
 
   try {
@@ -508,4 +516,161 @@ async function saveMcpScopes() {
     btn.textContent = 'Error — try again';
     btn.disabled = false;
   }
+}
+
+// =============================================================================
+// CLIENT AGENT HEALTH PANEL
+// Operator-facing. Shows all registered client agent runtimes, their status,
+// last heartbeat, and recent events. No AI calls — purely reads from the
+// platform worker's client_agent_runtimes + client_agent_events tables.
+// =============================================================================
+
+async function loadClientAgentHealth() {
+  const container = document.getElementById('client-agent-health-list');
+  if (!container) return;
+
+  container.innerHTML = '<div style="color:var(--muted);font-size:13px;">Loading agent runtimes…</div>';
+
+  const googleToken = sessionStorage.getItem('fm_google_token') || '';
+  try {
+    const res  = await fetch('/api/client-agent/runtimes', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+      body:    JSON.stringify({ limit: 100 }),
+    });
+    const data = await res.json();
+    if (!data.ok || !data.runtimes?.length) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:13px;">No agent runtimes registered yet.</div>';
+      renderAgentSummaryBadge(data.summary || {});
+      return;
+    }
+    renderAgentSummaryBadge(data.summary || {});
+    container.innerHTML = data.runtimes.map(renderAgentRuntimeRow).join('');
+  } catch {
+    container.innerHTML = '<div style="color:var(--ember);font-size:13px;">Could not load agent runtimes.</div>';
+  }
+}
+
+function renderAgentSummaryBadge(summary) {
+  const el = document.getElementById('client-agent-summary-badge');
+  if (!el) return;
+  const { healthy = 0, warn = 0, attention = 0, stale = 0, disabled = 0 } = summary;
+  const total = healthy + warn + attention + stale + disabled;
+  const hasIssues = (attention + stale) > 0;
+  el.textContent  = `${total} registered · ${healthy} healthy · ${attention + stale} need attention`;
+  el.style.color  = hasIssues ? 'var(--ember)' : 'var(--muted)';
+}
+
+function renderAgentRuntimeRow(runtime) {
+  const statusColor = {
+    healthy:    'var(--sage)',
+    warn:       '#f0b429',
+    attention:  'var(--ember)',
+    stale:      '#aaa',
+    disabled:   '#888',
+    registered: 'var(--muted)',
+  }[runtime.status] || 'var(--muted)';
+
+  const lastSeen = runtime.last_seen_at
+    ? relativeTime(runtime.last_seen_at)
+    : 'never';
+
+  const caps = (runtime.capabilities || []).join(', ') || '—';
+
+  return `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;background:var(--surface);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-weight:600;font-size:14px;">${esc(runtime.client_slug)}</div>
+        <span style="font-size:12px;font-weight:600;color:${statusColor};background:${statusColor}18;
+                     padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;">
+          ${esc(runtime.status)}
+        </span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;">
+        <span>Last seen: ${esc(lastSeen)}</span>
+        <span>Version: ${esc(runtime.agent_version || '—')}</span>
+        <span>Mode: ${esc(runtime.runtime_mode || '—')}</span>
+        <span>Schema: ${esc(runtime.schema_version || '—')}</span>
+        <span style="grid-column:1/-1;">Capabilities: ${esc(caps)}</span>
+      </div>
+      ${runtime.status === 'attention' || runtime.status === 'stale' ? `
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button onclick="loadAgentEvents('${esc(runtime.client_slug)}')"
+            style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:5px;background:none;color:var(--text);cursor:pointer;">
+            View events
+          </button>
+          <button onclick="deactivateAgent('${esc(runtime.client_slug)}')"
+            style="font-size:12px;padding:4px 10px;border:1px solid var(--ember);border-radius:5px;background:none;color:var(--ember);cursor:pointer;">
+            Deactivate
+          </button>
+        </div>` : ''}
+    </div>`;
+}
+
+async function loadAgentEvents(slug) {
+  const modal = document.getElementById('agent-events-modal');
+  const body  = document.getElementById('agent-events-body');
+  if (!modal || !body) return;
+
+  body.innerHTML = '<div style="color:var(--muted);font-size:13px;">Loading…</div>';
+  modal.style.display = 'flex';
+
+  const googleToken = sessionStorage.getItem('fm_google_token') || '';
+  try {
+    const res  = await fetch('/api/client-agent/events', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+      body:    JSON.stringify({ client_slug: slug, limit: 30 }),
+    });
+    const data = await res.json();
+    if (!data.ok || !data.events?.length) {
+      body.innerHTML = '<div style="color:var(--muted);font-size:13px;">No events found.</div>';
+      return;
+    }
+    body.innerHTML = data.events.map(e => `
+      <div style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;">
+          <strong>${esc(e.event_type)}</strong>
+          <span style="color:var(--muted);">${esc(relativeTime(e.received_at))}</span>
+        </div>
+        <div style="color:${e.severity === 'critical' ? 'var(--ember)' : e.severity === 'warn' ? '#f0b429' : 'var(--muted)'};">
+          ${esc(e.severity)} · v${esc(e.agent_version || '?')}
+        </div>
+      </div>`).join('');
+  } catch {
+    body.innerHTML = '<div style="color:var(--ember);font-size:13px;">Could not load events.</div>';
+  }
+}
+
+function closeAgentEventsModal() {
+  const modal = document.getElementById('agent-events-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function deactivateAgent(slug) {
+  if (!confirm(`Deactivate agent for "${slug}"? It will stop accepting heartbeats.`)) return;
+  const googleToken = sessionStorage.getItem('fm_google_token') || '';
+  try {
+    const res  = await fetch('/api/client-agent/deactivate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+      body:    JSON.stringify({ client_slug: slug }),
+    });
+    const data = await res.json();
+    if (data.ok) await loadClientAgentHealth();
+    else alert('Could not deactivate — try again.');
+  } catch { alert('Could not deactivate — try again.'); }
+}
+
+function relativeTime(iso) {
+  if (!iso) return '—';
+  const diff = Math.floor((Date.now() - Date.parse(iso)) / 1000);
+  if (diff < 60)   return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
