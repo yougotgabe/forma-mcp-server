@@ -1,6 +1,96 @@
 import { routeDashboardMessage } from './chat-cost-gate.js';
 import { guardScope } from './formaut-scope-guard.js';
+import {
+  produceJob,
+  getJobStatus,
+  listJobs,
+  claimJobs,
+  consumeJobs,
+  updateJobStatus,
+  failOrRetryJob,
+} from './formaut-job-queue.js';
+import { createFormautJobHandlers, normalizeJobTypeAliases } from './formaut-job-handlers.js';
+import {
+  seedArtifactDependencies,
+  recordArtifactInputChange,
+  getDeploymentState,
+  listArtifactLineage,
+  resolvePublishBlocker,
+} from './formaut-artifact-dependency-engine.js';
 import { runExistingWebsiteCrawlAdapter, previewExistingWebsiteCrawl } from './existing-website-crawl-adapter.js';
+import {
+  createArtifactVersion,
+  listArtifactVersions,
+  listReviewQueue,
+  reviewArtifactVersion,
+  publishArtifactVersion,
+  rollbackArtifact,
+  getChangeDashboard,
+  planSelectiveRebuilds,
+} from './formaut-artifact-pipeline.js';
+import { runOperationalMaintenanceLoop } from './operational/operational-maintenance-orchestrator.js';
+import { emitOperationalEvent } from './operational/operational-event-bus.js';
+import { generateRemediationPlans } from './operational/operational-remediation-planner.js';
+import { validateDeployment } from './operational/operational-deployment-validator.js';
+import { planSelectiveRegeneration } from './operational/operational-selective-regeneration.js';
+import { enqueueOperationalJob } from './jobs/enqueue-operational-job.js';
+import {
+  handleIntegrationsList,
+  handlePrintifyConnect,
+  handlePrintifyShops,
+  handlePrintifySyncProducts,
+  handleCommerceProducts,
+  handleResendConnect,
+  handleResendSend,
+} from './integration-hub.js';
+import { planEmailImplementation, classifyEmailIntent, EMAIL_SCENARIOS } from './email-intent-agent.js';
+import { renderEmailTemplate, buildEmailCopyPrompt, planEmailRoutingConfig } from './email-template-engine.js';
+import { handlePrintifyProductTemplatePreview } from './printify-product-template-engine.js';
+import { handlePreviewComposition } from './preview-composition-engine.js';
+import {
+  checkCapability,
+  listEntitlements,
+  CAPS,
+} from './capability-registry.js';
+import {
+  handleSupabaseCapacityStatus,
+  handleProvisionClientInfrastructure,
+  handleGetClientInfrastructure,
+  handleClientInfrastructureHealth,
+  handleRepairClientInfrastructure,
+} from './infrastructure/infrastructure-endpoint.js';
+
+import { createSupabaseRestAdapter } from './supabase-rest-adapter.js';
+import {
+  getOnboardingState,
+  initializeOnboardingState,
+  transitionOnboardingState,
+  applyCapacityCheckResult,
+} from './onboarding/onboarding-controller.js';
+import { ONBOARDING_STATES, getAllowedOnboardingTransitions } from './onboarding/onboarding-state-machine.js';
+import { createArtifactRecord, listArtifactRecords } from './artifacts/artifact-lineage.js';
+import { diffArtifactText } from './artifacts/artifact-diff.js';
+import { planArtifactRollback, markArtifactRolledBack } from './artifacts/rollback-engine.js';
+import { stageArtifactForReview } from './review/review-pipeline.js';
+import { calculateRisk } from './review/review-risk-engine.js';
+import { decideApproval } from './review/approval-engine.js';
+import { runMaintenanceChecks } from './maintenance/maintenance-orchestrator.js';
+import { evaluateEmailRules } from './email-workspace/email-rules-engine.js';
+import { handleEmailTrigger } from './email-workspace/email-trigger-engine.js';
+import { checkEmailProviderHealth } from './email-workspace/email-provider-health.js';
+import { selectLayout } from './design-intelligence/layout-selection.js';
+import { reasonAboutColors } from './design-intelligence/color-reasoning.js';
+import { recommendConversionPattern } from './design-intelligence/conversion-patterns.js';
+import { getMobilePriorities } from './design-intelligence/mobile-priority.js';
+import { buildAdminPanelManifest } from './admin-generator/admin-generator.js';
+
+import {
+  handleAgentImportValidate,
+  handleAgentImportStage,
+  handleAgentImportCommit,
+  handleAgentImportList,
+  handleAgentExport,
+} from './agent-interoperability.js';
 
 // =============================================================================
 // FORMA - PLATFORM WORKER
@@ -79,6 +169,46 @@ export default {
       if (path === '/chat/scope-guard') return handleChatScopeGuard(body, env);
       if (path === '/chat/preflight')  return handleChatPreflight(body, env);
       if (path === '/chat/crawl-url')   return handleChatCrawlUrl(body, env);
+      if (path === '/chat/crawl-url/enqueue') return handleChatCrawlUrlEnqueue(body, env);
+      if (path === '/infrastructure/supabase/capacity') return json(await handleSupabaseCapacityStatus(body, env));
+      if (path === '/infrastructure/provision') return json(await handleProvisionClientInfrastructure(body, env));
+      if (path === '/infrastructure/get') return json(await handleGetClientInfrastructure(body, env));
+      if (path === '/infrastructure/health') return json(await handleClientInfrastructureHealth(body, env));
+      if (path === '/infrastructure/repair') return json(await handleRepairClientInfrastructure(body, env));
+      if (path === '/jobs/create') return handleJobCreate(body, env);
+      if (path === '/jobs/status') return handleJobStatus(body, env);
+      if (path === '/jobs/list') return handleJobsList(body, env);
+      if (path === '/jobs/claim') return handleJobsClaim(body, env);
+      if (path === '/jobs/consume') return handleJobsConsume(body, env);
+      if (path === '/jobs/update') return handleJobUpdate(body, env);
+      if (path === '/jobs/fail') return handleJobFail(body, env);
+      if (path === '/operational/maintenance/run') return handleOperationalMaintenanceRun(body, env);
+      if (path === '/operational/events/create') return handleOperationalEventCreate(body, env);
+      if (path === '/operational/remediation/plan') return handleOperationalRemediationPlan(body, env);
+      if (path === '/operational/deployment/validate') return handleOperationalDeploymentValidate(body, env);
+      if (path === '/operational/dependencies/plan') return handleOperationalDependencyPlan(body, env);
+      if (path === '/operational/health') return handleOperationalHealth(body, env);
+      if (path === '/operational/remediation/approve') return handleOperationalRemediationApprove(body, env);
+      if (path === '/activity') return handleActivityList(body, env);
+      if (path === '/operator/deploys') return handleOperatorDeploys(body, env);
+      if (path === '/operator/env') return handleOperatorEnv(body, env);
+      if (path === '/signals/list') return handleSignalsList(body, env);
+      if (path === '/signals/promote') return handleSignalPromote(body, env);
+      if (path === '/signals/dismiss') return handleSignalDismiss(body, env);
+
+      if (path === '/artifacts/versions/create') return handleArtifactVersionCreate(body, env);
+      if (path === '/artifacts/versions/list') return handleArtifactVersionsList(body, env);
+      if (path === '/artifacts/reviews/list') return handleArtifactReviewsList(body, env);
+      if (path === '/artifacts/reviews/decide') return handleArtifactReviewDecision(body, env);
+      if (path === '/artifacts/publish') return handleArtifactPublish(body, env);
+      if (path === '/artifacts/rollback') return handleArtifactRollback(body, env);
+      if (path === '/artifacts/change-dashboard') return handleArtifactChangeDashboard(body, env);
+      if (path === '/artifacts/rebuilds/plan') return handleSelectiveRebuildPlan(body, env);
+      if (path === '/artifacts/dependencies/seed') return handleArtifactDependencySeed(body, env);
+      if (path === '/artifacts/input-change') return handleArtifactInputChange(body, env);
+      if (path === '/deployment/state') return handleDeploymentState(body, env);
+      if (path === '/artifacts/lineage') return handleArtifactLineage(body, env);
+      if (path === '/deployment/resolve-blocker') return handleResolvePublishBlocker(body, env);
       if (path === '/session')         return handleSession(body, env);
       if (path === '/signals')         return handleSignals(body, env);
       if (path === '/client-data')     return handleClientData(body, env);
@@ -87,21 +217,424 @@ export default {
       if (path === '/business-profile/confirm-field') return handleConfirmBusinessProfileField(body, env);
       if (path === '/business-profile/rollback')     return handleBusinessProfileRollback(body, env);
       if (path === '/service-request') return handleServiceRequest(body, env);
-      if (path === '/encrypt')         return handleEncrypt(body, env);
-      if (path === '/decrypt')         return handleDecrypt(body, env);
-      if (path === '/provision')       return handleProvision(body, env);
       if (path === '/usage')           return handleUsage(body, env);
       if (path === '/usage/check')     return handleUsageCheck(body, env);
       if (path === '/execute-tool')     return handleExecuteTool(body, env);
+      if (path === '/integrations/list') return handleIntegrationsList(body, env, integrationDeps());
+      if (path === '/integrations/printify/connect') return handlePrintifyConnect(body, env, integrationDeps());
+      if (path === '/integrations/printify/shops') return handlePrintifyShops(body, env, integrationDeps());
+      if (path === '/integrations/printify/sync-products') return handlePrintifySyncProducts(body, env, integrationDeps());
+      if (path === '/commerce/products') return handleCommerceProducts(body, env, integrationDeps());
+      if (path === '/commerce/printify/templates/preview') return handlePrintifyProductTemplatePreview(body, env, integrationDeps());
+      if (path === '/preview/compose') return handlePreviewComposition(body, env, integrationDeps());
+      // ── Email ────────────────────────────────────────────────────────────────
+      if (path === '/integrations/resend/connect') return handleResendConnect(body, env, integrationDeps());
+      if (path === '/email/send') return handleEmailSend(body, env);
+      if (path === '/email/classify') return handleEmailClassify(body, env);
+      if (path === '/email/plan') return handleEmailPlan(body, env);
+      if (path === '/email/templates/render') return handleEmailTemplateRender(body, env);
+      if (path === '/email/templates/generate') return handleEmailTemplateGenerate(body, env);
+      if (path === '/email/routing/plan') return handleEmailRoutingPlan(body, env);
+      if (path === '/email/scenarios/list') return json({ ok: true, scenarios: Object.values(EMAIL_SCENARIOS) });
+      if (path === '/email/rules/evaluate') return handleEmailRulesEvaluate(body, env);
+      if (path === '/email/triggers/handle') return handleEmailTriggerRoute(body, env);
+      if (path === '/email/provider-health') return handleEmailProviderHealthRoute(body, env);
+
+      // ── Next systems: onboarding, registry, lineage, review, maintenance, design ──
+      if (path === '/onboarding/state/get') return handleOnboardingStateGet(body, env);
+      if (path === '/onboarding/state/init') return handleOnboardingStateInit(body, env);
+      if (path === '/onboarding/state/transition') return handleOnboardingStateTransition(body, env);
+      if (path === '/onboarding/capacity/apply') return handleOnboardingCapacityApply(body, env);
+      if (path === '/onboarding/states/list') return json({ ok: true, states: ONBOARDING_STATES });
+
+      if (path === '/capabilities/registry/list') return handleCapabilityRegistryList(body, env);
+      if (path === '/capabilities/registry/check') return handleCapabilityRegistryCheck(body, env);
+      if (path === '/capabilities/registry/risk') return handleCapabilityRegistryRisk(body, env);
+
+      if (path === '/lineage/artifacts/create') return handleLineageArtifactCreate(body, env);
+      if (path === '/lineage/artifacts/list') return handleLineageArtifactList(body, env);
+      if (path === '/lineage/artifacts/diff') return json({ ok: true, diff: diffArtifactText({ before: body.before || '', after: body.after || '' }) });
+      if (path === '/lineage/artifacts/rollback-plan') return handleLineageRollbackPlan(body, env);
+      if (path === '/lineage/artifacts/mark-rolled-back') return handleLineageMarkRolledBack(body, env);
+
+      if (path === '/review/risk') return json({ ok: true, risk: calculateRisk({ artifact: body.artifact || {}, affectedSystems: body.affected_systems || body.affectedSystems || [] }) });
+      if (path === '/review/stage') return handleReviewStage(body, env);
+      if (path === '/review/decide') return handleReviewDecide(body, env);
+
+      if (path === '/maintenance/checks/run') return handleMaintenanceChecksRun(body, env);
+      if (path === '/design-intelligence/recommend') return handleDesignIntelligenceRecommend(body, env);
+      if (path === '/admin-generator/manifest') return handleAdminGeneratorManifest(body, env);
+
+      // ── Capability registry ────────────────────────────────────────────────
+      if (path === '/platform/capabilities') {
+        const tier    = body?.tier || body?.client_tier || body?.plan || 'standard';
+        const mcpOnly = body?.mcp_only === true;
+        const result  = await listEntitlements(env, tier, { mcpOnly });
+        return json({ ok: true, ...result });
+      }
+
+      // ── Agent import pipeline ──────────────────────────────────────────────
+      if (path === '/agent-import/validate') {
+        const block = await requireCap(env, CAPS.AGENT_IMPORT_VALIDATE, body, 'worker');
+        if (block) return block;
+        return handleAgentImportValidate(body, env);
+      }
+      if (path === '/agent-import/stage') {
+        const block = await requireCap(env, CAPS.AGENT_IMPORT_STAGE, body, 'worker');
+        if (block) return block;
+        return handleAgentImportStage(body, env);
+      }
+      if (path === '/agent-import/commit') {
+        const block = await requireCap(env, CAPS.AGENT_IMPORT_COMMIT, body, 'worker');
+        if (block) return block;
+        return handleAgentImportCommit(body, env);
+      }
+      if (path === '/agent-import/list') {
+        const block = await requireCap(env, CAPS.AGENT_IMPORT_VALIDATE, body, 'worker');
+        if (block) return block;
+        return handleAgentImportList(body, env);
+      }
+
+      // ── Agent export pipeline ──────────────────────────────────────────────
+      if (path === '/agent-export/design'          ||
+          path === '/agent-export/seo'             ||
+          path === '/agent-export/email'           ||
+          path === '/agent-export/commerce'        ||
+          path === '/agent-export/implementation') {
+        const block = await requireCap(env, CAPS.AGENT_EXPORT, body, 'worker');
+        if (block) return block;
+        const packageType = path.split('/').pop();
+        return handleAgentExport(body, env, packageType);
+      }
+
+      if (path === '/encrypt') {
+        const block = await requireCap(env, CAPS.CREDENTIAL_WRITE, body, 'worker');
+        if (block) return block;
+        return handleEncrypt(body, env);
+      }
+      if (path === '/decrypt') {
+        const block = await requireCap(env, CAPS.CREDENTIAL_READ, body, 'worker');
+        if (block) return block;
+        return handleDecrypt(body, env);
+      }
+      if (path === '/provision') {
+        const block = await requireCap(env, CAPS.OPERATOR_PROVISION, body, 'worker');
+        if (block) return block;
+        return handleProvision(body, env);
+      }
+
       return json({ error: 'Not found' }, 404);
     } catch (err) {
       console.error(`[${path}] Unhandled error:`, err);
       return json({ error: 'Internal server error', detail: err.message }, 500);
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runScheduledOperationalLoop(event, env));
   }
 };
 
 
+
+
+
+async function runScheduledOperationalLoop(event, env) {
+  const maintenance = await runOperationalMaintenanceLoop(env, operationalDeps(env));
+  const queue = await consumeJobs({
+    queue: env.JOBS_DEFAULT_QUEUE || 'default',
+    limit: Number(env.JOBS_CRON_LIMIT || 5),
+  }, env, queueDeps(env));
+  return { ok: true, maintenance, queue };
+}
+
+
+// =============================================================================
+// ENDPOINTS: Operational Intelligence Layer
+// =============================================================================
+
+async function handleOperationalMaintenanceRun(body, env) {
+  const result = await runOperationalMaintenanceLoop(env, operationalDeps(env));
+  return json({ ok: true, handled_by: 'operational_maintenance', result });
+}
+
+async function handleOperationalEventCreate(body, env) {
+  const event = await emitOperationalEvent(env, body.event || body, operationalDeps(env));
+  return json({ ok: true, event });
+}
+
+async function handleOperationalRemediationPlan(body, env) {
+  const client = {
+    id: body.client_id || body.client?.id || null,
+    slug: body.client_slug || body.slug || body.client?.slug || null,
+  };
+  if (!client.slug) throw new Error('client_slug or slug is required.');
+
+  const events = Array.isArray(body.events) ? body.events : [body.event || body];
+  const plans = await generateRemediationPlans(env, client, events, operationalDeps(env));
+  return json({ ok: true, plans });
+}
+
+async function handleOperationalDeploymentValidate(body, env) {
+  const result = await validateDeployment(env, body.deployment || body, operationalDeps(env));
+  return json({ ok: true, validation: result });
+}
+
+async function handleOperationalDependencyPlan(body, env) {
+  const plans = planSelectiveRegeneration(body.change_event || body);
+  return json({ ok: true, plans });
+}
+
+
+async function handleOperationalHealth(body, env) {
+  const slug = body.slug || body.client_slug || body.client_id || null;
+  const limit = Math.min(Number(body.limit || 30), 100);
+  const [events, plans] = await Promise.all([
+    safeSupabaseRows(env, `/rest/v1/operational_events?${slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : ''}select=*&order=created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/operational_remediation_plans?${slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : ''}select=*&order=created_at.desc&limit=${limit}`),
+  ]);
+
+  const planEvents = plans.map((plan) => ({
+    id: plan.id,
+    type: plan.issue_type || plan.job_type || 'remediation_plan',
+    severity: plan.risk_level === 'dangerous' ? 'critical' : plan.risk_level === 'review_required' ? 'warning' : 'info',
+    source: 'operational_remediation_planner',
+    client_slug: plan.client_slug,
+    created_at: plan.created_at || plan.updated_at,
+    approved: plan.approved,
+    executed: plan.executed,
+    queued_job_id: plan.queued_job_id,
+    risk_level: plan.risk_level,
+    plan: plan.plan || {},
+  }));
+
+  return json({ ok: true, events: [...planEvents, ...events].slice(0, limit), remediation_plans: plans, raw_events: events });
+}
+
+async function handleOperationalRemediationApprove(body, env) {
+  const planId = body.plan_id || body.id;
+  if (!planId) return json({ error: 'plan_id is required' }, 400);
+
+  const planRows = await safeSupabaseRows(env, `/rest/v1/operational_remediation_plans?id=eq.${encodeURIComponent(planId)}&select=*&limit=1`);
+  const plan = planRows[0];
+  if (!plan) return json({ error: 'Remediation plan not found' }, 404);
+
+  await supabase(env, 'PATCH', `/rest/v1/operational_remediation_plans?id=eq.${encodeURIComponent(planId)}`, {
+    approved: true,
+    approved_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).catch(() => null);
+
+  let jobResult = null;
+  if (plan.job_type && !plan.queued_job_id) {
+    jobResult = await produceJob({
+      slug: plan.client_slug || body.slug || body.client_slug,
+      client_slug: plan.client_slug || body.slug || body.client_slug,
+      job_type: plan.job_type,
+      payload: {
+        ...(plan.plan?.payload || {}),
+        operational_plan_id: plan.id,
+        approved_by: body.approved_by || 'operator',
+        approved_at: new Date().toISOString(),
+      },
+      priority: plan.plan?.priority || 60,
+      created_by: 'operator_approval',
+    }, env, queueDeps(env));
+
+    await supabase(env, 'PATCH', `/rest/v1/operational_remediation_plans?id=eq.${encodeURIComponent(planId)}`, {
+      queued_at: new Date().toISOString(),
+      queued_job_id: jobResult?.job?.id || null,
+      updated_at: new Date().toISOString(),
+    }).catch(() => null);
+  }
+
+  return json({ ok: true, plan_id: planId, approved: true, job: jobResult?.job || null });
+}
+
+async function handleActivityList(body, env) {
+  const slug = body.slug || body.client_slug || body.client_id || null;
+  const limit = Math.min(Number(body.limit || 40), 100);
+  const [events, jobs, versions, reviews] = await Promise.all([
+    safeSupabaseRows(env, `/rest/v1/operational_events?${slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : ''}select=*&order=created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/formaut_jobs?${slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : ''}select=*&order=created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/artifact_versions?${slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : ''}select=*&order=created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/artifact_reviews?${slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : ''}select=*&order=created_at.desc&limit=${limit}`),
+  ]);
+
+  const activity = [
+    ...events.map(e => ({ ...e, summary: e.type, detail: e.source, source_table: 'operational_events' })),
+    ...jobs.map(j => ({ ...j, summary: `Job ${j.status || 'queued'}: ${j.job_type || j.type || 'unknown'}`, detail: j.last_error || j.client_slug, source_table: 'formaut_jobs' })),
+    ...versions.map(v => ({ ...v, summary: `Artifact version: ${v.artifact_type || v.path || 'asset'}`, detail: v.status || v.change_summary || '', source_table: 'artifact_versions' })),
+    ...reviews.map(r => ({ ...r, summary: `Review ${r.status || 'pending'}: ${r.artifact_type || r.review_type || 'artifact'}`, detail: r.decision || r.summary || '', source_table: 'artifact_reviews' })),
+  ].sort((a,b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0)).slice(0, limit);
+
+  return json({ ok: true, events: activity });
+}
+
+async function handleOperatorDeploys(body, env) {
+  const limit = Math.min(Number(body.limit || 50), 100);
+  const [deploys, versions, jobs] = await Promise.all([
+    safeSupabaseRows(env, `/rest/v1/deployment_events?select=*&order=created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/artifact_versions?select=*&order=created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/formaut_jobs?job_type=ilike.*deploy*&select=*&order=created_at.desc&limit=${limit}`),
+  ]);
+
+  const normalized = [
+    ...deploys.map(d => ({ ...d, status: d.status || d.deployment_status, message: d.message || d.commit_message || d.summary, created_on: d.created_on || d.created_at, source_table: 'deployment_events' })),
+    ...versions.filter(v => ['published','live','rolled_back'].includes(String(v.status || '').toLowerCase())).map(v => ({
+      client_slug: v.client_slug,
+      project: v.artifact_type || v.path,
+      status: v.status === 'published' || v.status === 'live' ? 'success' : v.status,
+      message: v.change_summary || `Artifact ${v.status}`,
+      created_on: v.published_at || v.created_at,
+      url: v.preview_url || v.live_url || null,
+      source_table: 'artifact_versions',
+    })),
+    ...jobs.map(j => ({
+      client_slug: j.client_slug,
+      project: j.job_type,
+      status: j.status === 'succeeded' ? 'success' : j.status === 'failed' ? 'failure' : j.status,
+      message: j.last_error || j.summary || j.job_type,
+      created_on: j.completed_at || j.updated_at || j.created_at,
+      source_table: 'formaut_jobs',
+    })),
+  ].sort((a,b) => new Date(b.created_on || b.created_at || 0) - new Date(a.created_on || a.created_at || 0)).slice(0, limit);
+
+  return json({ ok: true, deploys: normalized });
+}
+
+async function handleOperatorEnv(body, env) {
+  const required = [
+    ['SUPABASE_URL', 'Platform Supabase REST endpoint used by the Worker.'],
+    ['SUPABASE_SERVICE_ROLE_KEY', 'Server-side Supabase key for platform tables.'],
+    ['WORKER_SECRET', 'Shared secret used by Pages Functions to call the Worker.'],
+    ['ENCRYPTION_KEY', 'AES key for encrypted client credentials.'],
+    ['ANTHROPIC_API_KEY', 'Hosted Formaut reasoning.'],
+    ['RESEND_API_KEY', 'Operator notifications and email sending.'],
+    ['OPERATOR_EMAIL', 'Operator-only dashboard access.'],
+  ];
+  const optional = [
+    ['GITHUB_TOKEN', 'GitHub automation and deployment writers.'],
+    ['CLOUDFLARE_API_TOKEN', 'Cloudflare Pages/domain automation.'],
+    ['SUPABASE_ACCESS_TOKEN', 'Supabase project provisioning.'],
+    ['JOBS_DEFAULT_QUEUE', 'Optional named queue for cron job consumption.'],
+  ];
+  return json({
+    ok: true,
+    vars: [...required, ...optional].map(([key, note]) => ({ key, note, present: Boolean(env[key]) })),
+  });
+}
+
+async function handleSignalsList(body, env) {
+  const slug = body.slug || body.client_slug || null;
+  const status = body.status || 'pending';
+  const limit = Math.min(Number(body.limit || 50), 100);
+  const statusFilter = status && status !== 'all' ? `status=eq.${encodeURIComponent(status)}&` : '';
+  const slugFilter = slug ? `client_slug=eq.${encodeURIComponent(slug)}&` : '';
+  const [tech, style] = await Promise.all([
+    safeSupabaseRows(env, `/rest/v1/signals?${slugFilter}${statusFilter}select=*&order=last_seen_at.desc.nullslast,created_at.desc&limit=${limit}`),
+    safeSupabaseRows(env, `/rest/v1/style_signals?${slugFilter}${statusFilter}select=*&order=session_date.desc&limit=${limit}`),
+  ]);
+  const signals = [
+    ...tech.map(s => ({ ...s, signal_type: 'technical', title: s.summary || s.type })),
+    ...style.map(s => ({ ...s, signal_type: 'style', title: [s.business_type, s.page_type, s.final_layout].filter(Boolean).join(' / '), summary: s.final_layout || s.layout_preference || s.tone })),
+  ].slice(0, limit);
+  return json({ ok: true, signals });
+}
+
+async function handleSignalPromote(body, env) {
+  return handleSignalStatusChange(body, env, 'promoted');
+}
+
+async function handleSignalDismiss(body, env) {
+  return handleSignalStatusChange(body, env, 'dismissed');
+}
+
+async function handleSignalStatusChange(body, env, status) {
+  const id = body.signal_id || body.id;
+  if (!id) return json({ error: 'signal_id is required' }, 400);
+  const patch = {
+    status,
+    reviewed_at: new Date().toISOString(),
+    reviewed_by: body.reviewed_by || 'operator',
+  };
+  let res = await supabase(env, 'PATCH', `/rest/v1/signals?id=eq.${encodeURIComponent(id)}`, patch);
+  if (!res.ok) {
+    res = await supabase(env, 'PATCH', `/rest/v1/style_signals?id=eq.${encodeURIComponent(id)}`, patch);
+  }
+  if (!res.ok) return json({ error: `Could not update signal`, detail: await safeText(res) }, 502);
+  return json({ ok: true, signal_id: id, status });
+}
+
+async function safeSupabaseRows(env, path) {
+  try {
+    const res = await supabase(env, 'GET', path);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+// =============================================================================
+// ENDPOINTS: DB-backed platform job queue
+// =============================================================================
+// Day 1-2 queue foundation. Use /jobs/create from dashboard/tool routes to enqueue
+// work, and /jobs/consume from a cron trigger or manual worker call to process it.
+// =============================================================================
+
+async function handleJobCreate(body, env) {
+  return json(await produceJob(body, env, queueDeps(env)));
+}
+
+async function handleJobStatus(body, env) {
+  return json(await getJobStatus(body, env, queueDeps(env)));
+}
+
+async function handleJobsList(body, env) {
+  return json(await listJobs(body, env, queueDeps(env)));
+}
+
+async function handleJobsClaim(body, env) {
+  return json(await claimJobs(body, env, queueDeps(env)));
+}
+
+async function handleJobsConsume(body, env) {
+  return json(await consumeJobs(body, env, queueDeps(env)));
+}
+
+async function handleJobUpdate(body, env) {
+  return json(await updateJobStatus(body, env, queueDeps(env)));
+}
+
+async function handleJobFail(body, env) {
+  return json(await failOrRetryJob(body, env, queueDeps(env)));
+}
+
+
+// =============================================================================
+// ENDPOINTS: Deployment State & Artifact Dependency Engine
+// =============================================================================
+
+async function handleArtifactDependencySeed(body, env) {
+  return json(await seedArtifactDependencies(body, env, artifactDeps(env)));
+}
+
+async function handleArtifactInputChange(body, env) {
+  return json(await recordArtifactInputChange(body, env, artifactDeps(env)));
+}
+
+async function handleDeploymentState(body, env) {
+  return json(await getDeploymentState(body, env, artifactDeps(env)));
+}
+
+async function handleArtifactLineage(body, env) {
+  return json(await listArtifactLineage(body, env, artifactDeps(env)));
+}
+
+async function handleResolvePublishBlocker(body, env) {
+  return json(await resolvePublishBlocker(body, env, artifactDeps(env)));
+}
 
 // =============================================================================
 // ENDPOINT: POST /chat/cost-gate
@@ -150,19 +683,34 @@ async function handleChatScopeGuard(body, env) {
 // =============================================================================
 // Safe front door for dashboard chat.
 // Order:
-//   1. Cost gate handles canned/blocked messages and chooses the minimum path.
-//   2. Scope guard protects business memory before interpretation or synthesis.
-//   3. URL-only messages route to crawl before any Anthropic call.
-//   4. Crawl output is normalized into evidence + persisted when client storage exists.
-//   5. LLM synthesis is allowed only after deterministic routing/evidence steps.
+//   1. Cost gate handles greetings/help/thanks/URL-only/etc. without Anthropic.
+//   2. Scope guard redirects out-of-scope/high-risk conversations without Anthropic.
+//   3. Only then does the response permit a future LLM call.
 // =============================================================================
 
 async function handleChatPreflight(body, env) {
   const costResult = await routeDashboardMessage(body, env);
   const costRoute = costResult.route || {};
-  const isUrlCrawlRoute = costRoute.next_action === 'trigger_website_crawl_adapter';
 
-  if (costResult.blocked) {
+  // Cost gate handled it deterministically, blocked it, or routed it to a tool.
+  if (costResult.blocked || costRoute.should_call_llm === false) {
+    if (costRoute.next_action === 'trigger_website_crawl_adapter' && (body.execute_tools === true || body.execute_crawl === true)) {
+      const crawlResult = await runWebsiteCrawlFromChatBody(body, env);
+      return json({
+        ok: true,
+        handled_by: crawlResult.persisted ? 'crawl_adapter' : 'crawl_adapter_preview',
+        should_call_llm: false,
+        response: costRoute.response || null,
+        next_action: crawlResult.persisted ? 'review_crawl_results' : 'review_crawl_preview',
+        route: costRoute,
+        intent: costResult.intent,
+        estimate: costResult.estimate,
+        crawl: crawlResult,
+        blocked: false,
+        block_reason: null,
+      });
+    }
+
     return json({
       ok: true,
       handled_by: 'cost_gate',
@@ -172,50 +720,21 @@ async function handleChatPreflight(body, env) {
       route: costRoute,
       intent: costResult.intent,
       estimate: costResult.estimate,
-      blocked: true,
+      blocked: costResult.blocked || false,
       block_reason: costResult.block_reason || null,
     });
   }
 
-  if (costRoute.should_call_llm === false && !isUrlCrawlRoute) {
-    return json({
-      ok: true,
-      handled_by: 'cost_gate',
-      should_call_llm: false,
-      response: costRoute.response || null,
-      next_action: costRoute.next_action || null,
-      route: costRoute,
-      intent: costResult.intent,
-      estimate: costResult.estimate,
-      blocked: false,
-      block_reason: null,
-    });
-  }
-
-  const scopeResult = isUrlCrawlRoute
-    ? {
-        shouldContinue: true,
-        responseText: null,
-        scopeDecision: {
-          category: 'in_scope',
-          action: 'continue',
-          reason: 'url_ingestion_route_from_cost_gate',
-          confidence: 0.95,
-        },
-        memoryPolicy: {
-          storeAsBusinessMemory: false,
-          reason: 'raw URL evidence must be normalized before becoming memory',
-        },
-      }
-    : await guardScope({
-        message: body.message || body.text || '',
-        context: {
-          sessionId: body.session_id || body.sessionId || costResult.session_id || null,
-          userId: body.user_id || body.userId || null,
-          businessProfileId: body.business_profile_id || body.businessProfileId || null,
-        },
-        supabase: null,
-      });
+  // Only check scope when the cost gate thinks a model might be needed.
+  const scopeResult = await guardScope({
+    message: body.message || body.text || '',
+    context: {
+      sessionId: body.session_id || body.sessionId || costResult.session_id || null,
+      userId: body.user_id || body.userId || null,
+      businessProfileId: body.business_profile_id || body.businessProfileId || null,
+    },
+    supabase: null,
+  });
 
   if (!scopeResult.shouldContinue) {
     return json({
@@ -230,49 +749,6 @@ async function handleChatPreflight(body, env) {
         route: costRoute,
         estimate: costResult.estimate,
       },
-    });
-  }
-
-  if (isUrlCrawlRoute) {
-    const shouldRunCrawl = body.auto_crawl !== false;
-    if (!shouldRunCrawl) {
-      return json({
-        ok: true,
-        handled_by: 'url_detection',
-        should_call_llm: false,
-        response: costRoute.response || null,
-        next_action: 'trigger_website_crawl_adapter',
-        route: costRoute,
-        intent: costResult.intent,
-        scope: scopeResult.scopeDecision,
-        memory_policy: scopeResult.memoryPolicy,
-        estimate: costResult.estimate,
-      });
-    }
-
-    const crawlResult = await runWebsiteCrawlFromChatBody(body, env);
-    const hasReviewItems = Boolean(crawlResult.evidence_substrate?.profilePatch?.needs_review?.length || crawlResult.extracted_profile?.needs_review?.length);
-    return json({
-      ok: true,
-      handled_by: crawlResult.persisted ? 'crawl_evidence_pipeline' : 'crawl_evidence_preview',
-      should_call_llm: false,
-      response: costRoute.response || null,
-      next_action: hasReviewItems ? 'review_uncertain_evidence' : 'review_crawl_evidence',
-      route: costRoute,
-      intent: costResult.intent,
-      scope: scopeResult.scopeDecision,
-      memory_policy: scopeResult.memoryPolicy,
-      estimate: costResult.estimate,
-      crawl: crawlResult,
-      optional_llm_synthesis: {
-        allowed_after_review: true,
-        recommended: hasReviewItems,
-        reason: hasReviewItems
-          ? 'Evidence has uncertain fields that may benefit from a synthesis/clarification message.'
-          : 'Deterministic evidence is available; LLM synthesis is optional, not required.',
-      },
-      blocked: false,
-      block_reason: null,
     });
   }
 
@@ -321,6 +797,40 @@ async function handleChatCrawlUrl(body, env) {
     should_call_llm: false,
     next_action: crawlResult.persisted ? 'review_crawl_results' : 'review_crawl_preview',
     crawl: crawlResult,
+  });
+}
+
+
+async function handleChatCrawlUrlEnqueue(body, env) {
+  const url = extractUrlFromMessage(body.url || body.existing_website_url || body.message || body.text || '');
+  if (!url) throw new Error('A website URL is required to enqueue a crawl.');
+
+  const slug = body.slug || body.client_slug || null;
+  const clientId = body.client_id || null;
+  const job = await produceJob({
+    client_id: clientId,
+    client_slug: slug,
+    session_id: body.session_id || body.sessionId || null,
+    queue: body.queue || env.JOBS_DEFAULT_QUEUE || 'default',
+    job_type: 'crawl_website',
+    priority: body.priority || 50,
+    max_attempts: body.max_attempts || 3,
+    created_by: 'chat_crawl_url_enqueue',
+    payload: {
+      url,
+      slug,
+      client_id: clientId,
+      limit: Number(body.limit || 4),
+      persist: body.persist_crawl !== false,
+    },
+  }, env, queueDeps(env));
+
+  return json({
+    ok: true,
+    handled_by: 'job_queue',
+    should_call_llm: false,
+    next_action: 'watch_job_status',
+    job: job.job,
   });
 }
 
@@ -943,7 +1453,18 @@ async function handleConfirmBusinessProfileField(body, env) {
     reason,
     actor_type: 'client',
   });
-  return json({ ok: true });
+
+  const dependencyResult = await recordArtifactInputChange({
+    client_id: client.id,
+    client_slug: client.slug,
+    source_artifact_type: 'business_profile',
+    source_key: field_path,
+    new_value: confirmed_value,
+    event_source: 'business_profile_field_confirmed',
+    change_summary: `${field_path} was confirmed or changed by the client.`,
+  }, env, artifactDeps(env)).catch((err) => ({ ok: false, error: err.message }));
+
+  return json({ ok: true, artifact_dependency_result: dependencyResult });
 }
 
 async function handleBusinessProfileRollback(body, env) {
@@ -981,7 +1502,19 @@ async function handleBusinessProfileRollback(body, env) {
     reason,
     actor_type: 'system',
   });
-  return json({ ok: true });
+
+  const dependencyResult = await recordArtifactInputChange({
+    client_id: client.id,
+    client_slug: client.slug,
+    source_artifact_type: 'business_profile',
+    source_key: target.field_path,
+    old_value: target.new_value,
+    new_value: target.old_value,
+    event_source: 'business_profile_rollback',
+    change_summary: `${target.field_path} was rolled back.`,
+  }, env, artifactDeps(env)).catch((err) => ({ ok: false, error: err.message }));
+
+  return json({ ok: true, artifact_dependency_result: dependencyResult });
 }
 
 async function resolveClientDataAccess(slugOrId, env) {
@@ -2443,11 +2976,335 @@ function githubHeaders(token) {
   };
 }
 
+
+
+// =============================================================================
+// INTEGRATION HUB DEPENDENCIES
+// =============================================================================
+// Keeps connector logic in integration-hub.js while reusing the Worker helpers
+// that already know how to talk to Supabase and encrypt/decrypt credentials.
+// =============================================================================
+
+function integrationDeps() {
+  return { supabase, encrypt, decrypt, json };
+}
+
+// =============================================================================
+// EMAIL ENDPOINT HANDLERS
+// =============================================================================
+
+async function handleEmailClassify(body, env) {
+  const { intent } = body;
+  if (!intent) return json({ error: 'intent is required' }, 400);
+  const result = classifyEmailIntent(intent);
+  return json({ ok: true, result });
+}
+
+async function handleEmailPlan(body, env) {
+  const { intent, context = {} } = body;
+  if (!intent) return json({ error: 'intent is required' }, 400);
+  const plan = planEmailImplementation(intent, context);
+  return json({ ok: true, plan });
+}
+
+async function handleEmailTemplateRender(body, env) {
+  const { template_family, data } = body;
+  if (!template_family || !data) return json({ error: 'template_family and data are required' }, 400);
+  try {
+    const html = renderEmailTemplate(template_family, data);
+    return json({ ok: true, html });
+  } catch (err) {
+    return json({ error: err.message }, 400);
+  }
+}
+
+async function handleEmailTemplateGenerate(body, env) {
+  // Full pipeline: classify → select template family → build LLM prompt → call Anthropic → render HTML
+  const { intent, business_profile = {}, custom_instructions, context = {} } = body;
+  if (!intent) return json({ error: 'intent is required' }, 400);
+
+  const plan = planEmailImplementation(intent, context);
+  if (!plan.ok) return json({ ok: false, plan, error: plan.message }, 400);
+
+  const { scenario } = plan;
+  const template_family = scenario.template_family;
+  if (!template_family) {
+    // Inbound routing scenarios don't produce HTML email templates
+    return json({ ok: true, plan, html: null, note: 'This scenario does not require an HTML email template.' });
+  }
+
+  // Build copy prompt and call Anthropic
+  const copyPrompt = buildEmailCopyPrompt({ scenario, business_profile, template_family, custom_instructions });
+
+  let copyData;
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: copyPrompt }],
+      }),
+    });
+
+    const anthropicData = await anthropicRes.json();
+    const rawText = anthropicData.content?.[0]?.text || '';
+    const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    copyData = JSON.parse(cleaned);
+  } catch (err) {
+    return json({ error: 'Failed to generate email copy', detail: err.message }, 500);
+  }
+
+  // Inject brand
+  copyData.brand = business_profile.brand || {};
+
+  // Render HTML
+  let html;
+  try {
+    html = renderEmailTemplate(template_family, copyData);
+  } catch (err) {
+    return json({ error: 'Template render failed', detail: err.message, copy_data: copyData }, 500);
+  }
+
+  return json({ ok: true, plan, template_family, copy_data: copyData, html });
+}
+
+async function handleEmailSend(body, env) {
+  return handleResendSend(body, env, integrationDeps());
+}
+
+async function handleEmailRoutingPlan(body, env) {
+  const { from_address, to_address, zone_id } = body;
+  if (!from_address || !to_address) return json({ error: 'from_address and to_address are required' }, 400);
+  const config = planEmailRoutingConfig({ from_address, to_address, zone_id });
+  return json({ ok: true, config });
+}
+
+
+function operationalDeps(env) {
+  return {
+    supabase,
+    produceJob,
+    json,
+    normalizeJobType: normalizeJobTypeAliases,
+    createHandlers: () => createFormautJobHandlers({ supabase, decrypt }),
+  };
+}
+
+
+function queueDeps(env) {
+  return {
+    supabase,
+    json,
+    decrypt,
+    normalizeJobType: normalizeJobTypeAliases,
+    createHandlers: () => createFormautJobHandlers({ supabase, decrypt }),
+  };
+}
+
+
+function artifactDeps(env) {
+  return {
+    supabase,
+    produceJob,
+  };
+}
+
+function artifactPipelineDeps(env) {
+  return {
+    supabase,
+    produceJob,
+  };
+}
+
+
+
+
+// =============================================================================
+// ENDPOINTS: Next systems integration layer
+// =============================================================================
+
+function supabaseAdapter(env) {
+  return createSupabaseRestAdapter(env);
+}
+
+function requiredClientId(body) {
+  const clientId = body.client_id || body.clientId || body.client?.id || null;
+  if (!clientId) throw new Error('client_id is required');
+  return clientId;
+}
+
+async function handleOnboardingStateGet(body, env) {
+  const clientId = requiredClientId(body);
+  const row = await getOnboardingState({ supabase: supabaseAdapter(env), clientId });
+  return json({ ok: true, onboarding: row, allowed_transitions: getAllowedOnboardingTransitions(row?.current_state) });
+}
+
+async function handleOnboardingStateInit(body, env) {
+  const clientId = requiredClientId(body);
+  const row = await initializeOnboardingState({ supabase: supabaseAdapter(env), clientId, metadata: body.metadata || {} });
+  return json({ ok: true, onboarding: row, allowed_transitions: getAllowedOnboardingTransitions(row?.current_state) });
+}
+
+async function handleOnboardingStateTransition(body, env) {
+  const clientId = requiredClientId(body);
+  const currentState = body.current_state || body.currentState;
+  const nextState = body.next_state || body.nextState;
+  if (!currentState || !nextState) return json({ ok: false, error: 'current_state and next_state are required' }, 400);
+  const result = await transitionOnboardingState({
+    supabase: supabaseAdapter(env),
+    clientId,
+    currentState,
+    nextState,
+    metadata: body.metadata || {},
+    eventType: body.event_type || body.eventType,
+  });
+  return json({ ok: true, ...result, allowed_transitions: getAllowedOnboardingTransitions(result.current_state) });
+}
+
+async function handleOnboardingCapacityApply(body, env) {
+  const clientId = requiredClientId(body);
+  const currentState = body.current_state || body.currentState || 'supabase_connected';
+  const capacityStatus = body.capacity_status || body.capacityStatus || body;
+  const result = await applyCapacityCheckResult({ supabase: supabaseAdapter(env), clientId, currentState, capacityStatus });
+  return json({ ok: true, ...result });
+}
+
+async function handleCapabilityRegistryList(body, env) {
+  // Uses real DB-backed registry (listEntitlements from capability-registry.js)
+  const tier = body.tier || body.client_tier || 'operator';
+  const opts = body.mcp_only ? { mcpOnly: true } : {};
+  const { capabilities } = await listEntitlements(env, tier, opts);
+  return json({ ok: true, capabilities });
+}
+
+async function handleCapabilityRegistryCheck(body, env) {
+  // Uses real DB-backed registry (checkCapability from capability-registry.js)
+  const capability = body.capability || body.capability_name;
+  if (!capability) return json({ ok: false, error: 'capability is required' }, 400);
+  const tier = body.tier || body.client_tier || 'operator';
+  const invokedBy = body.invoked_by || 'worker';
+  const result = await checkCapability(env, capability, tier, invokedBy, { skipAudit: true });
+  return json({ ok: true, allowed: result.allowed, capability, reason: result.reason, risk_level: result.risk_level });
+}
+
+async function handleCapabilityRegistryRisk(body, env) {
+  // Uses real DB-backed registry (checkCapability from capability-registry.js)
+  const capability = body.capability || body.capability_name;
+  if (!capability) return json({ ok: false, error: 'capability is required' }, 400);
+  const result = await checkCapability(env, capability, 'operator', 'worker', { skipAudit: true });
+  return json({ ok: true, risk: { risk_level: result.risk_level, requires_approval: result.requires_approval, requires_review: result.requires_review } });
+}
+
+async function handleLineageArtifactCreate(body, env) {
+  const artifact = body.artifact || body;
+  if (body.client_id || body.clientId) artifact.metadata = { ...(artifact.metadata || {}), client_id: body.client_id || body.clientId };
+  const result = await createArtifactRecord({ supabase: supabaseAdapter(env), artifact });
+  return json({ ok: !result.error, ...result }, result.error ? 502 : 200);
+}
+
+async function handleLineageArtifactList(body, env) {
+  const result = await listArtifactRecords({
+    supabase: supabaseAdapter(env),
+    clientId: body.client_id || body.clientId,
+    artifactType: body.artifact_type || body.artifactType,
+  });
+  return json({ ok: !result.error, ...result }, result.error ? 502 : 200);
+}
+
+async function handleLineageRollbackPlan(body, env) {
+  const artifactId = body.artifact_id || body.artifactId;
+  if (!artifactId) return json({ ok: false, error: 'artifact_id is required' }, 400);
+  const result = await planArtifactRollback({ supabase: supabaseAdapter(env), artifactId });
+  return json({ ok: !result.error, ...result }, result.error ? 502 : 200);
+}
+
+async function handleLineageMarkRolledBack(body, env) {
+  const artifactId = body.artifact_id || body.artifactId;
+  if (!artifactId) return json({ ok: false, error: 'artifact_id is required' }, 400);
+  const result = await markArtifactRolledBack({ supabase: supabaseAdapter(env), artifactId, metadata: body.metadata || {} });
+  return json({ ok: !result.error, ...result }, result.error ? 502 : 200);
+}
+
+async function handleReviewStage(body, env) {
+  const clientId = requiredClientId(body);
+  const result = await stageArtifactForReview({
+    supabase: supabaseAdapter(env),
+    clientId,
+    artifact: body.artifact || {},
+    affectedSystems: body.affected_systems || body.affectedSystems || [],
+  });
+  return json({ ok: true, ...result });
+}
+
+async function handleReviewDecide(body, env) {
+  const reviewId = body.review_id || body.reviewId;
+  const decision = body.decision;
+  if (!reviewId || !decision) return json({ ok: false, error: 'review_id and decision are required' }, 400);
+  const result = await decideApproval({ supabase: supabaseAdapter(env), reviewId, decision, decidedBy: body.decided_by || body.decidedBy || 'operator' });
+  return json({ ok: !result.error, ...result }, result.error ? 502 : 200);
+}
+
+async function handleMaintenanceChecksRun(body, env) {
+  const client = body.client || {
+    id: body.client_id || body.clientId || body.slug || body.client_slug,
+    slug: body.slug || body.client_slug,
+    live_url: body.live_url || body.url,
+    integrations: body.integrations || [],
+  };
+  const result = await runMaintenanceChecks({ client });
+  return json({ ok: true, ...result });
+}
+
+async function handleEmailRulesEvaluate(body, env) {
+  const matches = await evaluateEmailRules({ event: body.event || {}, rules: body.rules || [] });
+  return json({ ok: true, matches });
+}
+
+async function handleEmailTriggerRoute(body, env) {
+  const result = await handleEmailTrigger({
+    event: body.event || {},
+    rules: body.rules || [],
+    templateFactory: body.templateFactory,
+  });
+  return json({ ok: true, ...result });
+}
+
+async function handleEmailProviderHealthRoute(body, env) {
+  const result = await checkEmailProviderHealth({ provider: body.provider || {} });
+  return json({ ok: true, health: result });
+}
+
+async function handleDesignIntelligenceRecommend(body, env) {
+  const industry = body.industry || body.business_type || body.businessType;
+  const commerce = body.commerce === true || Boolean(body.commerce_provider || body.commerceProvider);
+  const audience = body.audience || body.target_audience || null;
+  const features = body.features || [];
+  const layout = selectLayout({ industry, commerce, audience });
+  const colors = reasonAboutColors({ industry, existingColors: body.existing_colors || body.existingColors || [], desiredTone: body.desired_tone || body.desiredTone || [] });
+  const conversion = recommendConversionPattern({ industry, commerce });
+  const mobile = getMobilePriorities({ industry, features });
+  return json({ ok: true, recommendation: { industry, commerce, layout, colors, conversion, mobile } });
+}
+
+async function handleAdminGeneratorManifest(body, env) {
+  return json({ ok: true, manifest: buildAdminPanelManifest(body || {}) });
+}
+
 // =============================================================================
 // SHARED UTILITIES
 // =============================================================================
 
 // Supabase REST helper - always uses service_role key (platform DB only)
+async function safeText(res) {
+  try { return await res.text(); } catch { return `${res?.status || ''} ${res?.statusText || ''}`.trim(); }
+}
+
 async function supabase(env, method, path, body = null, extraHeaders = {}) {
   const url = env.SUPABASE_URL + path;
   const headers = {
@@ -2471,6 +3328,33 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+/**
+ * Capability authorization middleware for Worker routes.
+ * Returns a 403 Response if the capability is denied, or null if allowed.
+ * Operator requests (body.is_operator === true) always pass.
+ *
+ * Usage:
+ *   const block = await requireCap(env, CAPS.CREDENTIAL_READ, body, 'worker');
+ *   if (block) return block;
+ */
+async function requireCap(env, capability, body, invokedBy = 'worker') {
+  if (body?.is_operator === true) return null;
+  const tier = body?.tier || body?.client_tier || body?.plan || 'standard';
+  const result = await checkCapability(env, capability, tier, invokedBy, {
+    clientSlug:     body?.client_slug || body?.slug || null,
+    callerIdentity: body?.email || null,
+  });
+  if (!result.allowed) {
+    return json({
+      ok:                false,
+      error:             'capability_denied',
+      reason:            result.reason,
+      requires_approval: result.requires_approval ?? false,
+    }, 403);
+  }
+  return null;
 }
 
 // AES-256-GCM encryption

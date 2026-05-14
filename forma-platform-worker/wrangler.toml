@@ -2,6 +2,12 @@ name = "forma-platform"
 main = "index.js"
 compatibility_date = "2024-01-01"
 
+# Cron triggers — autonomous operational loop runs every 15 minutes.
+# Processes queued jobs (backpressure queue), runs maintenance checks,
+# and writes health events for all active clients.
+[triggers]
+crons = ["*/15 * * * *"]
+
 # All secrets are set via `wrangler secret put` — never hardcoded here.
 # Required secrets:
 #   SUPABASE_URL
@@ -14,3 +20,4 @@ compatibility_date = "2024-01-01"
 #   CLOUDFLARE_API_TOKEN    (operator CF token for provisioning Pages projects)
 #   CLOUDFLARE_ACCOUNT_ID
 #   SUPABASE_MGMT_TOKEN     (operator Supabase Management API token for provisioning)
+#   OPERATOR_EMAIL          (your email — grants operator-level access in chat sessions)

@@ -1,6 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "test:evidence-substrate": "node tests/evidence-substrate-smoke-test.mjs"
+    "deploy": "wrangler deploy",
+    "test:ai-gateway": "node tests/ai-gateway-smoke-test.mjs",
+    "test:workflow-engine": "node tests/workflow-engine-smoke-test.mjs"
   }
 }

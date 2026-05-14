@@ -1,0 +1,14 @@
+{
+  "name": "forma-mcp-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Formaut MCP server — gives Claude in claude.ai direct tool access to the Formaut platform",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "secrets": "bash setup-secrets.sh"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

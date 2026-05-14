@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formaut — Connect your accounts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:          #0e0c0a;
+      --paper:        #f5f0e8;
+      --ember:        #c85a1e;
+      --ember-dim:    #8c3d12;
+      --ash:          #2a2520;
+      --smoke:        #4a4540;
+      --fog:          #8a837a;
+      --wire:         #2e2a26;
+      --green:        #4ade80;
+      --green-bg:     rgba(74,222,128,0.05);
+      --green-border: rgba(74,222,128,0.2);
+      --f-display:    'DM Sans', system-ui, sans-serif;
+      --f-body:       'DM Sans', system-ui, sans-serif;
+      --f-mono:       'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--f-body);
+      font-weight: 300;
+      line-height: 1.6;
+      min-height: 100dvh;
+    }
+
+    ::selection { background: var(--ember); color: var(--paper); }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 2rem;
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .logo {
+      font-family: var(--f-display);
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: var(--paper);
+    }
+    .logo span { color: var(--ember); }
+
+    .topbar-meta {
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fog);
+    }
+
+    /* ── Layout ── */
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 3.5rem 2rem 6rem;
+    }
+
+    /* ── Progress ── */
+    .progress-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 3rem;
+    }
+
+    .progress-segment {
+      height: 3px;
+      flex: 1;
+      background: var(--wire);
+      border-radius: 2px;
+      transition: background 0.4s;
+    }
+    .progress-segment.done    { background: var(--ember); }
+    .progress-segment.current { background: var(--ember); opacity: 0.5; }
+
+    /* ── Headings ── */
+    .section-label {
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-family: var(--f-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--paper);
+      margin-bottom: 0.75rem;
+    }
+
+    .intro {
+      font-size: 1rem;
+      color: var(--fog);
+      line-height: 1.7;
+      max-width: 520px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── Security notice ── */
+    .security-notice {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1.1rem 1.25rem;
+      background: var(--ash);
+      border: 1px solid var(--wire);
+      border-left: 3px solid var(--ember);
+      margin-bottom: 2.5rem;
+      font-size: 0.82rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    .security-notice strong { color: var(--paper); font-weight: 500; }
+
+    /* ── Step cards ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+      margin-bottom: 2rem;
+    }
+
+    .step {
+      background: var(--ink);
+      padding: 1.75rem 1.5rem;
+      transition: background 0.2s;
+    }
+    .step.active   { background: var(--ash); }
+    .step.complete { background: var(--ink); }
+    .step.locked   { opacity: 0.4; pointer-events: none; }
+
+    .step-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .step-num {
+      width: 2rem;
+      height: 2rem;
+      flex-shrink: 0;
+      border: 1px solid var(--wire);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      color: var(--fog);
+      margin-top: 0.15rem;
+      transition: all 0.2s;
+    }
+    .step.active .step-num   { border-color: var(--ember); color: var(--ember); }
+    .step.complete .step-num { background: var(--green-bg); border-color: var(--green-border); color: var(--green); font-size: 0.9rem; }
+
+    .step-meta { flex: 1; }
+
+    .step-service {
+      font-family: var(--f-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fog);
+      margin-bottom: 0.2rem;
+    }
+
+    .step-title {
+      font-family: var(--f-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--paper);
+      letter-spacing: -0.01em;
+    }
+
+    .step-badge {
+      font-family: var(--f-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid var(--wire);
+      color: var(--fog);
+      align-self: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .step.complete .step-badge {
+      color: var(--green);
+      border-color: var(--green-border);
+      background: var(--green-bg);
+    }
+
+    /* Step body */
+    .step-body {
+      display: none;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--wire);
+    }
+    .step.active .step-body { display: block; }
+
+    .step-desc {
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+    .step-desc strong { color: var(--paper); font-weight: 500; }
+
+    .guide-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      color: var(--ember);
+      border: 1px solid rgba(200,90,30,0.3);
+      padding: 0.35rem 0.75rem;
+      margin-bottom: 1.5rem;
+      cursor: pointer;
+      background: none;
+      transition: border-color 0.2s;
+    }
+    .guide-link:hover { border-color: var(--ember); }
+
+    /* ── Fields ── */
+    .fields { display: flex; flex-direction: column; gap: 1rem; }
+
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--fog);
+    }
+
+    .field-tag {
+      font-family: var(--f-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.1rem 0.4rem;
+      border: 1px solid;
+    }
+    .field-tag.secret { color: var(--ember); border-color: rgba(200,90,30,0.4); background: rgba(200,90,30,0.06); }
+    .field-tag.plain  { color: var(--fog);   border-color: var(--wire); }
+
+    .field-input {
+      background: var(--ash);
+      border: 1px solid var(--wire);
+      color: var(--paper);
+      font-family: var(--f-mono);
+      font-size: 0.82rem;
+      padding: 0.7rem 0.875rem;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: var(--ember); }
+    .field-input::placeholder { color: var(--smoke); }
+
+    .field-masked {
+      background: var(--ash);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+      font-family: var(--f-mono);
+      font-size: 0.82rem;
+      padding: 0.7rem 0.875rem;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .field-masked.visible { display: flex; }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--smoke);
+      line-height: 1.5;
+    }
+
+    /* ── Actions ── */
+    .step-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--ember);
+      color: var(--paper);
+      font-family: var(--f-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.7rem 1.5rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover    { background: var(--ember-dim); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .step-saving {
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      color: var(--fog);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .step-saving.visible { display: flex; }
+
+    .saving-dots span {
+      display: inline-block;
+      width: 3px; height: 3px;
+      border-radius: 50%;
+      background: var(--ember);
+      opacity: 0.4;
+      animation: dot 1.2s ease-in-out infinite;
+    }
+    .saving-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .saving-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dot {
+      0%, 80%, 100% { opacity: 0.4; }
+      40%            { opacity: 1; }
+    }
+
+    .step-error { font-size: 0.8rem; color: var(--ember); margin-top: 0.75rem; display: none; }
+    .step-error.visible { display: block; }
+
+    /* ── Completion ── */
+    .completion {
+      display: none;
+      text-align: center;
+      padding: 3rem 2rem;
+      border: 1px solid var(--green-border);
+      background: var(--green-bg);
+      margin-top: 1rem;
+    }
+    .completion.visible { display: block; }
+
+    .completion h2 {
+      font-family: var(--f-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .completion p { color: var(--fog); font-size: 0.95rem; margin-bottom: 2rem; }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="logo">Form<span>aut</span></div>
+    <div class="topbar-meta">Account setup · <span id="step-indicator">Step 1 of 3</span></div>
+  </header>
+
+  <div class="page">
+
+    <div class="progress-bar">
+      <div class="progress-segment current" id="prog-0"></div>
+      <div class="progress-segment"         id="prog-1"></div>
+      <div class="progress-segment"         id="prog-2"></div>
+    </div>
+
+    <div class="section-label">Connect your accounts</div>
+    <h1 id="page-heading">Your site needs a home.</h1>
+    <p class="intro">
+      Three free accounts — GitHub, Cloudflare, and Supabase. Each one takes about
+      two minutes. Your site runs on these accounts permanently, even if you stop
+      using Formaut. We're setting up your infrastructure, not renting you ours.
+    </p>
+
+    <div class="security-notice">
+      <span>🔒</span>
+      <span>
+        <strong>Credentials are encrypted before storage.</strong>
+        API tokens you enter here are encrypted the moment they're received — the raw value
+        is never stored, never logged, and never visible to anyone, including us.
+        Only the encrypted form is saved. Tokens are used only to build and deploy your site.
+      </span>
+    </div>
+
+    <div class="steps">
+
+      <!-- ── Step 1: GitHub ── -->
+      <div class="step active" id="step-github">
+        <div class="step-header">
+          <div class="step-num" id="num-github">1</div>
+          <div class="step-meta">
+            <div class="step-service">GitHub</div>
+            <div class="step-title">Connect your code repository</div>
+          </div>
+          <div class="step-badge" id="badge-github">Not connected</div>
+        </div>
+        <div class="step-body">
+          <p class="step-desc">
+            Your site's code lives in <strong>your own GitHub repository</strong> — not ours.
+            Create a free account if you don't have one, then generate a Personal Access Token
+            so Formaut can create and push your site files.
+          </p>
+          <button class="guide-link" onclick="openGuide('github')">
+            📋 Open step-by-step GitHub guide →
+          </button>
+          <div class="fields">
+            <div class="field">
+              <div class="field-label">
+                GitHub username
+                <span class="field-tag plain">Identifier — not a secret</span>
+              </div>
+              <input class="field-input" type="text" id="github_username"
+                placeholder="e.g. maria-santos"
+                autocomplete="off" spellcheck="false">
+              <div class="field-hint">Your GitHub profile username — visible in your profile URL.</div>
+            </div>
+            <div class="field">
+              <div class="field-label">
+                Personal Access Token
+                <span class="field-tag secret">Encrypted on save</span>
+              </div>
+              <!-- type=password prevents browser from logging or autofilling -->
+              <input class="field-input" type="password" id="github_token"
+                placeholder="ghp_••••••••••••••••••••••••••••••••"
+                autocomplete="new-password" spellcheck="false">
+              <div class="field-masked" id="masked-github_token">
+                <span>✓</span> Token saved securely — value not displayed
+              </div>
+              <div class="field-hint">
+                GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) →
+                Generate new token. Scopes needed: <strong>repo</strong>, <strong>workflow</strong>.
+              </div>
+            </div>
+          </div>
+          <div class="step-actions">
+            <button class="btn-primary" id="btn-github" onclick="saveStep('github')">
+              Save &amp; continue
+            </button>
+            <div class="step-saving" id="saving-github">
+              <div class="saving-dots"><span></span><span></span><span></span></div>
+              Securing your token…
+            </div>
+          </div>
+          <div class="step-error" id="error-github"></div>
+        </div>
+      </div>
+
+      <!-- ── Step 2: Cloudflare ── -->
+      <div class="step locked" id="step-cloudflare">
+        <div class="step-header">
+          <div class="step-num" id="num-cloudflare">2</div>
+          <div class="step-meta">
+            <div class="step-service">Cloudflare</div>
+            <div class="step-title">Connect your hosting &amp; DNS</div>
+          </div>
+          <div class="step-badge" id="badge-cloudflare">Not connected</div>
+        </div>
+        <div class="step-body">
+          <p class="step-desc">
+            Your site is hosted on <strong>your own Cloudflare account</strong> — free tier,
+            no bandwidth limits, global CDN, automatic SSL. Create an account, then generate an
+            API token with the permissions shown in the guide.
+          </p>
+          <button class="guide-link" onclick="openGuide('cloudflare')">
+            📋 Open step-by-step Cloudflare guide →
+          </button>
+          <div class="fields">
+            <div class="field">
+              <div class="field-label">
+                Account ID
+                <span class="field-tag plain">Identifier — not a secret</span>
+              </div>
+              <input class="field-input" type="text" id="cloudflare_account_id"
+                placeholder="32-character hex string"
+                autocomplete="off" spellcheck="false">
+              <div class="field-hint">
+                In Cloudflare: click <strong>Workers &amp; Pages</strong> in the left sidebar.
+                Your Account ID appears in the right sidebar.
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">
+                API Token
+                <span class="field-tag secret">Encrypted on save</span>
+              </div>
+              <input class="field-input" type="password" id="cloudflare_token"
+                placeholder="••••••••••••••••••••••••••••••••••••••••"
+                autocomplete="new-password" spellcheck="false">
+              <div class="field-masked" id="masked-cloudflare_token">
+                <span>✓</span> Token saved securely — value not displayed
+              </div>
+              <div class="field-hint">
+                My Profile → API Tokens → Create Token → Edit Cloudflare Workers template →
+                add <strong>Cloudflare Pages: Edit</strong> permission.
+                Set expiry to 1 year.
+              </div>
+            </div>
+          </div>
+          <div class="step-actions">
+            <button class="btn-primary" id="btn-cloudflare" onclick="saveStep('cloudflare')">
+              Save &amp; continue
+            </button>
+            <div class="step-saving" id="saving-cloudflare">
+              <div class="saving-dots"><span></span><span></span><span></span></div>
+              Securing your token…
+            </div>
+          </div>
+          <div class="step-error" id="error-cloudflare"></div>
+        </div>
+      </div>
+
+      <!-- ── Step 3: Supabase ── -->
+      <div class="step locked" id="step-supabase">
+        <div class="step-header">
+          <div class="step-num" id="num-supabase">3</div>
+          <div class="step-meta">
+            <div class="step-service">Supabase</div>
+            <div class="step-title">Connect your database</div>
+          </div>
+          <div class="step-badge" id="badge-supabase">Not connected</div>
+        </div>
+        <div class="step-body">
+          <p class="step-desc">
+            Your content, customer data, and site history live in
+            <strong>your own Supabase account</strong>. Free tier, 500MB, no credit card required.
+            Create an account and generate a Management API token.
+          </p>
+          <button class="guide-link" onclick="openGuide('supabase')">
+            📋 Open step-by-step Supabase guide →
+          </button>
+          <div class="fields">
+            <div class="field">
+              <div class="field-label">
+                Organization ID
+                <span class="field-tag plain">Identifier — not a secret</span>
+              </div>
+              <input class="field-input" type="text" id="supabase_org_id"
+                placeholder="e.g. abcdefghijkl"
+                autocomplete="off" spellcheck="false">
+              <div class="field-hint">
+                Found in your Supabase URL:
+                supabase.com/dashboard/org/<strong>[this part]</strong>/general
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">
+                Management API Token
+                <span class="field-tag secret">Encrypted on save</span>
+              </div>
+              <input class="field-input" type="password" id="supabase_token"
+                placeholder="sbp_••••••••••••••••••••••••••••••••"
+                autocomplete="new-password" spellcheck="false">
+              <div class="field-masked" id="masked-supabase_token">
+                <span>✓</span> Token saved securely — value not displayed
+              </div>
+              <div class="field-hint">
+                Click your avatar (top right) → <strong>Account</strong> → Access Tokens →
+                Generate new token → name it "Formaut" → set expiry to <strong>Never</strong>.
+              </div>
+            </div>
+          </div>
+          <div class="step-actions">
+            <button class="btn-primary" id="btn-supabase" onclick="saveStep('supabase')">
+              Save &amp; finish
+            </button>
+            <div class="step-saving" id="saving-supabase">
+              <div class="saving-dots"><span></span><span></span><span></span></div>
+              Securing your token…
+            </div>
+          </div>
+          <div class="step-error" id="error-supabase"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Completion -->
+    <div class="completion" id="completion">
+      <div style="font-size:2rem; margin-bottom:1rem;">✓</div>
+      <h2>Accounts connected.</h2>
+      <p>GitHub, Cloudflare, and Supabase are linked. Formaut is setting up your infrastructure now.</p>
+
+      <!-- Provisioning progress — shown while /provision runs -->
+      <div id="provision-progress" style="margin: 1.5rem auto; max-width: 420px; text-align: left; display: none;">
+        <div style="font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;">Setting up your infrastructure</div>
+        <div id="provision-steps" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+
+      <!-- Error state -->
+      <div id="provision-error" style="display: none; margin: 1rem auto; max-width: 420px; padding: 0.875rem 1rem; background: #1a0a0a; border: 1px solid #5a1a1a; border-radius: 8px; font-size: 0.85rem; color: #ff6b6b;"></div>
+
+      <button class="btn-primary" id="btn-go-dashboard" onclick="goToDashboard()" style="margin: 1.5rem auto 0; display: none; padding: 0.875rem 2rem;">
+        Go to your dashboard →
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Session context ────────────────────────────────────────────────────────
+    const clientId    = sessionStorage.getItem('fm_client_slug') || '';
+    const googleToken = sessionStorage.getItem('fm_google_token') || '';
+
+    // Guard: if no session, redirect to dashboard (which handles auth)
+    if (!googleToken || !clientId) {
+      window.location.href = '/dashboard';
+    }
+
+    const STEP_ORDER = ['github', 'cloudflare', 'supabase'];
+
+    // ── Step dispatch ──────────────────────────────────────────────────────────
+    async function saveStep(service) {
+      const btn      = document.getElementById(`btn-${service}`);
+      const savingEl = document.getElementById(`saving-${service}`);
+      const errorEl  = document.getElementById(`error-${service}`);
+
+      clearError(service);
+      btn.disabled = true;
+      savingEl.classList.add('visible');
+
+      try {
+        if (service === 'github')     await saveGitHub();
+        if (service === 'cloudflare') await saveCloudflare();
+        if (service === 'supabase')   await saveSupabase();
+        markDone(service);
+      } catch (err) {
+        showError(service, err.message || 'Something went wrong — please try again.');
+        btn.disabled = false;
+      } finally {
+        savingEl.classList.remove('visible');
+      }
+    }
+
+    // ── GitHub ────────────────────────────────────────────────────────────────
+    async function saveGitHub() {
+      const username = document.getElementById('github_username').value.trim();
+      const token    = document.getElementById('github_token').value;
+
+      if (!username) throw new Error('Enter your GitHub username.');
+      if (!token)    throw new Error('Enter your Personal Access Token.');
+      if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+        throw new Error('Token should start with ghp_ or github_pat_ — check you copied the right value.');
+      }
+
+      // Plain metadata first (username — not a secret)
+      await saveMetadata({ github_username: username });
+
+      // Encrypted token
+      await saveCredential({ field: 'github_token_enc', secret_value: token });
+
+      // Clear raw value from DOM immediately
+      document.getElementById('github_token').value = '';
+    }
+
+    // ── Cloudflare ────────────────────────────────────────────────────────────
+    async function saveCloudflare() {
+      const accountId = document.getElementById('cloudflare_account_id').value.trim();
+      const token     = document.getElementById('cloudflare_token').value;
+
+      if (!accountId) throw new Error('Enter your Cloudflare Account ID.');
+      if (accountId.length < 20) throw new Error('Account ID looks too short — paste the full hex string.');
+      if (!token)     throw new Error('Enter your Cloudflare API Token.');
+
+      await saveMetadata({ cloudflare_account_id: accountId });
+      await saveCredential({ field: 'cloudflare_token_enc', secret_value: token });
+
+      document.getElementById('cloudflare_token').value = '';
+    }
+
+    // ── Supabase ──────────────────────────────────────────────────────────────
+    async function saveSupabase() {
+      const orgId = document.getElementById('supabase_org_id').value.trim();
+      const token = document.getElementById('supabase_token').value;
+
+      if (!orgId) throw new Error('Enter your Supabase Organization ID.');
+      if (!token) throw new Error('Enter your Management API Token.');
+      if (!token.startsWith('sbp_')) {
+        throw new Error('Management token should start with sbp_ — check you copied the right value.');
+      }
+
+      await saveMetadata({ supabase_org_id: orgId });
+      await saveCredential({ field: 'supabase_mgmt_token_enc', secret_value: token });
+
+      document.getElementById('supabase_token').value = '';
+    }
+
+    // ── API: save encrypted credential ────────────────────────────────────────
+    async function saveCredential({ field, secret_value }) {
+      const res = await fetch('/api/save-credential', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${googleToken}`,
+        },
+        body: JSON.stringify({ secret_value, field, client_id: clientId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save credential.');
+    }
+
+    // ── API: save plain metadata ───────────────────────────────────────────────
+    async function saveMetadata(updates) {
+      const res = await fetch('/api/save-metadata', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${googleToken}`,
+        },
+        body: JSON.stringify({ client_id: clientId, updates }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save metadata.');
+    }
+
+    // ── UI helpers ─────────────────────────────────────────────────────────────
+    function markDone(service) {
+      const stepEl  = document.getElementById(`step-${service}`);
+      const numEl   = document.getElementById(`num-${service}`);
+      const badgeEl = document.getElementById(`badge-${service}`);
+
+      // Mask the secret field
+      const tokenFieldMap = {
+        github:     'github_token',
+        cloudflare: 'cloudflare_token',
+        supabase:   'supabase_token',
+      };
+      const tokenId = tokenFieldMap[service];
+      if (tokenId) {
+        document.getElementById(tokenId).style.display = 'none';
+        document.getElementById(`masked-${tokenId}`).classList.add('visible');
+      }
+
+      // Update card state
+      stepEl.classList.remove('active');
+      stepEl.classList.add('complete');
+      numEl.textContent   = '✓';
+      badgeEl.textContent = 'Connected';
+
+      // Advance to next step
+      const idx  = STEP_ORDER.indexOf(service);
+      const next = STEP_ORDER[idx + 1];
+
+      if (next) {
+        const nextEl = document.getElementById(`step-${next}`);
+        nextEl.classList.remove('locked');
+        nextEl.classList.add('active');
+        nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateProgress(idx + 1);
+        document.getElementById('step-indicator').textContent = `Step ${idx + 2} of 3`;
+      } else {
+        updateProgress(3);
+        const completionEl = document.getElementById('completion');
+        completionEl.classList.add('visible');
+        completionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // All 3 steps saved — kick off infrastructure provisioning
+        runProvisioning();
+      }
+    }
+
+    function updateProgress(doneCount) {
+      STEP_ORDER.forEach((_, i) => {
+        const seg = document.getElementById(`prog-${i}`);
+        if (i < doneCount)        seg.className = 'progress-segment done';
+        else if (i === doneCount) seg.className = 'progress-segment current';
+        else                      seg.className = 'progress-segment';
+      });
+    }
+
+    function showError(service, msg) {
+      const el = document.getElementById(`error-${service}`);
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+
+    function clearError(service) {
+      const el = document.getElementById(`error-${service}`);
+      el.classList.remove('visible');
+    }
+
+    function openGuide(service) {
+      window.open(`/guides/connect-${service}`, '_blank');
+    }
+
+    function goToDashboard() {
+      window.location.href = '/dashboard';
+    }
+
+    // ── Provisioning ────────────────────────────────────────────────────────
+    // Called once all 3 credentials are saved. Hits /api/provision which
+    // triggers the platform Worker to create the GitHub repo, Cloudflare Pages
+    // project, and client Supabase project in sequence.
+    //
+    // On success: shows dashboard button.
+    // On partial failure: shows which step failed + still shows dashboard button.
+    //   (Credentials are always saved before provisioning runs — user is never
+    //    blocked from the dashboard if provisioning fails partway.)
+
+    const PROVISION_STEP_LABELS = {
+      github_repo:      'Creating GitHub repository',
+      cloudflare_pages: 'Setting up Cloudflare Pages',
+      supabase_project: 'Creating Supabase project',
+      supabase_ready:   'Waiting for Supabase to initialize',
+      supabase_keys:    'Securing Supabase API keys',
+      client_schema:    'Running database schema',
+      onboarding_state: 'Saving onboarding record',
+    };
+
+    function renderProvisionStep(step, status, detail) {
+      const icon  = { ok: '✓', running: '…', failed: '✗', error: '✗' }[status] || '·';
+      const color = { ok: '#4ade80', running: '#888', failed: '#ff6b6b', error: '#ff6b6b' }[status] || '#888';
+      const label = PROVISION_STEP_LABELS[step] || step;
+      return `<div style="display:flex;align-items:flex-start;gap:0.625rem;font-size:0.85rem;line-height:1.4;">
+        <span style="color:${color};font-weight:700;min-width:1rem;margin-top:1px;">${icon}</span>
+        <span>${label}${detail ? `<span style="color:#888;font-size:0.78rem;display:block;">${detail}</span>` : ''}</span>
+      </div>`;
+    }
+
+    async function runProvisioning() {
+      const progressEl = document.getElementById('provision-progress');
+      const stepsEl    = document.getElementById('provision-steps');
+      const errorEl    = document.getElementById('provision-error');
+      const btnEl      = document.getElementById('btn-go-dashboard');
+
+      progressEl.style.display = 'block';
+      stepsEl.innerHTML = renderProvisionStep('github_repo', 'running');
+
+      let result;
+      try {
+        const res = await fetch('/api/provision', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${googleToken}`,
+          },
+          body: JSON.stringify({ client_id: clientId }),
+        });
+        result = await res.json();
+      } catch (err) {
+        progressEl.style.display = 'none';
+        errorEl.textContent = `Could not reach provisioning service — your credentials are saved. Continue to the dashboard and provisioning can be retried from there. (${err.message})`;
+        errorEl.style.display = 'block';
+        btnEl.style.display   = 'block';
+        return;
+      }
+
+      // Render all completed steps with their final status
+      if (Array.isArray(result.steps) && result.steps.length) {
+        stepsEl.innerHTML = result.steps
+          .map(s => renderProvisionStep(s.step, s.status, s.detail))
+          .join('');
+      }
+
+      if (result.ok) {
+        btnEl.style.display = 'block';
+      } else {
+        const failedAt = result.failed_at || 'unknown step';
+        const label    = PROVISION_STEP_LABELS[failedAt] || failedAt;
+        errorEl.textContent = `Stopped at: ${label}. Your credentials are saved — continue to the dashboard to retry or provision manually.`;
+        errorEl.style.display = 'block';
+        btnEl.style.display   = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

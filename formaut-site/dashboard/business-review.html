@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formaut — Business Review</title>
+  <link rel="stylesheet" href="/dashboard/assets/css/business-review.css" />
+</head>
+<body>
+  <main class="review-shell">
+    <header class="review-header">
+      <p class="eyebrow">Evidence-gated memory</p>
+      <h1>Business Profile Review</h1>
+      <p>Approve confirmed facts, resolve uncertain facts, and prevent contradictions from becoming durable business memory.</p>
+    </header>
+
+    <section class="review-grid">
+      <article class="review-panel">
+        <h2>Confirmed facts</h2>
+        <div id="confirmed-facts" class="review-list"></div>
+      </article>
+
+      <article class="review-panel">
+        <h2>Uncertain facts</h2>
+        <div id="uncertain-facts" class="review-list"></div>
+      </article>
+
+      <article class="review-panel danger">
+        <h2>Contradictions</h2>
+        <div id="contradictions" class="review-list"></div>
+      </article>
+    </section>
+  </main>
+  <script type="module" src="/dashboard/assets/js/business-review.js"></script>
+</body>
+</html>

@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formaut — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script src="https://accounts.google.com/gsi/client" async defer id="gsi-script"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/dashboard.css">
+</head>
+<body>
+
+  <!-- AUTH SCREEN — shown before Google sign-in completes -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">Form<span>aut</span></div>
+      <div class="auth-tagline">Your site. Your data.</div>
+      <div class="auth-divider"></div>
+
+      <div class="auth-prompt" id="auth-prompt">
+        Sign in with the Google account<br>you use to manage your site.
+      </div>
+
+      <div id="google-signin-btn"></div>
+
+      <div class="auth-loading" id="auth-loading">
+        <div class="auth-loading-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="auth-loading-text" id="auth-loading-text">Signing in…</div>
+      </div>
+
+      <div class="auth-error" id="auth-error"></div>
+
+      <div class="auth-note">
+        Only accounts registered with Formaut<br>can access the dashboard.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+      <div class="topbar-logo">Form<span>aut</span></div>
+    </div>
+
+    <div class="site-status" id="site-status">
+      <!-- Populated by JS from client record -->
+      <div class="status-pill live">
+        <span class="status-dot"></span>
+        Live
+      </div>
+      <a class="site-url-link" href="#" id="site-url-link" target="_blank" rel="noopener">
+        <span id="site-url-text">yoursite.com</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M1.5 8.5L8.5 1.5M8.5 1.5H3.5M8.5 1.5V6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="topbar-right">
+      <button class="operator-toggle" id="operator-toggle" onclick="toggleOperatorMode()" title="Switch between client and operator view">⚙ Operator</button>
+      <div class="plan-badge" id="plan-badge">Standard</div>
+      <div class="topbar-avatar" id="topbar-avatar" title="Account">G</div>
+    </div>
+  </header>
+
+  <!-- MOBILE OVERLAY -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Site</div>
+        <button class="sidebar-btn active" id="nav-chat" onclick="setView('chat')">
+          <span class="sidebar-btn-icon">💬</span> Chat with Formaut
+        </button>
+        <button class="sidebar-btn" id="nav-site" onclick="window.open(document.getElementById('site-url-link').href,'_blank')">
+          <span class="sidebar-btn-icon">↗</span> View live site
+        </button>
+        <button class="sidebar-btn" id="nav-admin" onclick="setView('admin')">
+          <span class="sidebar-btn-icon">🔧</span> Admin panel
+        </button>
+        <button class="sidebar-btn" id="nav-email" onclick="setView('email')">
+          <span class="sidebar-btn-icon">✉️</span> Emails
+        </button>
+        <button class="sidebar-btn" id="nav-activity" onclick="setView('activity')">
+          <span class="sidebar-btn-icon">📋</span> Activity
+        </button>
+        <button class="sidebar-btn" id="nav-connections" onclick="setView('connections')">
+          <span class="sidebar-btn-icon">🔌</span> Connections
+        </button>
+        <button class="sidebar-btn" id="nav-business-review" onclick="window.location.href='/dashboard/business-review.html'">
+          <span class="sidebar-btn-icon">✅</span> Business review
+        </button>
+        <button class="sidebar-btn" id="nav-infrastructure" onclick="setView('infrastructure')">
+          <span class="sidebar-btn-icon">🏗️</span> Infrastructure
+        </button>
+        <button class="sidebar-btn" id="nav-mcp" onclick="setView('mcp')">
+          <span class="sidebar-btn-icon">🤖</span> Connected agents
+        </button>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Recent sessions</div>
+        <div id="session-list">
+          <!-- Populated from Supabase session history -->
+          <button class="session-item" onclick="loadSession('demo-1')">
+            <span class="session-item-title">Added booking form to contact page</span>
+            <span class="session-item-date">Today</span>
+          </button>
+          <button class="session-item" onclick="loadSession('demo-2')">
+            <span class="session-item-title">Updated holiday hours</span>
+            <span class="session-item-date">May 2</span>
+          </button>
+          <button class="session-item" onclick="loadSession('demo-3')">
+            <span class="session-item-title">Initial site build</span>
+            <span class="session-item-date">Apr 30</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account</div>
+        <button class="sidebar-btn" id="nav-billing" onclick="setView('billing')">
+          <span class="sidebar-btn-icon">💳</span> Billing
+        </button>
+        <button class="sidebar-btn" id="nav-settings" onclick="setView('settings')">
+          <span class="sidebar-btn-icon">🔧</span> Settings
+        </button>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section operator-section">
+        <div class="sidebar-label" style="color:var(--ember);">Operator</div>
+        <button class="sidebar-btn" id="nav-op-clients" onclick="setView('op-clients')">
+          <span class="sidebar-btn-icon">👥</span> All clients
+        </button>
+        <button class="sidebar-btn" id="nav-op-queue" onclick="setView('op-queue')">
+          <span class="sidebar-btn-icon">📡</span> Job queue
+        </button>
+        <button class="sidebar-btn" id="nav-op-deploys" onclick="setView('op-deploys')">
+          <span class="sidebar-btn-icon">🚀</span> Deploy log
+        </button>
+        <button class="sidebar-btn" id="nav-op-env" onclick="setView('op-env')">
+          <span class="sidebar-btn-icon">🔑</span> Env inspector
+        </button>
+        <button class="sidebar-btn" id="nav-op-signals" onclick="setView('op-signals')">
+          <span class="sidebar-btn-icon">🧠</span> Signals
+        </button>
+        <button class="sidebar-btn" id="nav-op-health" onclick="setView('op-health')">
+          <span class="sidebar-btn-icon">💚</span> Health
+        </button>
+        <button class="sidebar-btn" id="nav-op-prompt" onclick="setView('op-prompt')">
+          <span class="sidebar-btn-icon">🧪</span> Prompt tester
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-text">Powered by Claude · Formaut</div>
+      </div>
+    </aside>
+
+    <!-- CHAT + PREVIEW SPLIT -->
+    <div class="chat-area">
+
+      <!-- Welcome / empty state -->
+      <div class="welcome" id="welcome-state">
+        <div class="welcome-eyebrow">Your AI web team</div>
+        <h1 class="welcome-heading">What do you want<br>to work on today?</h1>
+        <p class="welcome-sub">Describe a change, a new page, an update — or just ask. Formaut remembers your site and picks up where you left off.</p>
+        <div class="suggestions">
+          <button class="chip" onclick="fillInput('Update my hours for the holidays')">
+            <span class="chip-icon">🕐</span> Update my hours
+          </button>
+          <button class="chip" onclick="fillInput('Add a booking form to my contact page')">
+            <span class="chip-icon">📋</span> Add a booking form
+          </button>
+          <button class="chip" onclick="fillInput('Change the hero headline on my homepage')">
+            <span class="chip-icon">✏️</span> Change my headline
+          </button>
+          <button class="chip" onclick="fillInput('Add a daily specials section to my homepage')">
+            <span class="chip-icon">⭐</span> Add a specials section
+          </button>
+          <button class="chip" onclick="fillInput('My phone number changed — update it everywhere')">
+            <span class="chip-icon">📞</span> Update my phone number
+          </button>
+          <button class="chip" onclick="fillInput('Add a new service to my services page')">
+            <span class="chip-icon">➕</span> Add a new service
+          </button>
+        </div>
+      </div>
+
+      <!-- Message thread (hidden until first message) -->
+      <div class="messages" id="message-thread" style="display:none;"></div>
+
+
+
+      <!-- Admin panel workspace -->
+      <div class="workspace-panel" id="admin-panel">
+        <div class="workspace-shell">
+          <div class="workspace-eyebrow">Admin panel</div>
+          <h1 class="workspace-title" id="admin-title">Your site's admin panel.</h1>
+          <p class="workspace-sub" id="admin-sub">Ask Formaut to build or update the controls you use to manage your site content — menu items, hours, team members, announcements, specials, and more.</p>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+            <div style="flex:1;min-width:0;" id="admin-chat-area">
+              <!-- Admin-mode chat thread renders here -->
+              <div class="messages" id="admin-message-thread" style="display:none;max-height:60vh;overflow-y:auto;"></div>
+              <div class="input-box" id="admin-input-box" style="margin-top:1rem;">
+                <textarea id="admin-chat-input" class="input-textarea" placeholder="Describe what you want to be able to edit on your site…" rows="1" maxlength="2000"></textarea>
+                <div class="input-bottom">
+                  <span class="input-hint">↵ Send</span>
+                  <div class="input-actions">
+                    <button class="send-btn" onclick="sendModeMessage('admin')" title="Send"><span>↑</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="admin-preview-area" style="flex:1;min-width:280px;display:none;">
+              <div class="workspace-eyebrow" style="margin-bottom:0.5rem;">Live admin panel</div>
+              <iframe id="admin-preview-iframe" style="width:100%;height:500px;border:1px solid var(--wire);border-radius:0.65rem;background:white;" title="Admin panel preview"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email workspace -->
+      <div class="workspace-panel" id="email-panel">
+        <div class="workspace-shell">
+          <div class="workspace-eyebrow">Email templates</div>
+          <h1 class="workspace-title">Automated emails for your customers.</h1>
+          <p class="workspace-sub">Describe the situation — a purchase, an inquiry, a booking — and Formaut builds a branded HTML email that goes out automatically. Your voice, your design.</p>
+          <div id="email-message-thread" class="messages" style="display:none;max-height:55vh;overflow-y:auto;"></div>
+          <div class="input-box" style="margin-top:1rem;">
+            <textarea id="email-chat-input" class="input-textarea" placeholder="Describe the email you want — who receives it and when…" rows="1" maxlength="2000"></textarea>
+            <div class="input-bottom">
+              <span class="input-hint">↵ Send</span>
+              <div class="input-actions">
+                <button class="send-btn" onclick="sendModeMessage('email')" title="Send"><span>↑</span></button>
+              </div>
+            </div>
+          </div>
+          <div id="email-templates-list" style="margin-top:2rem;"></div>
+        </div>
+      </div>
+
+      <!-- Activity feed panel -->
+      <div class="workspace-panel" id="activity-panel">
+        <div class="workspace-shell">
+          <div class="workspace-eyebrow">Activity</div>
+          <h1 class="workspace-title">What Formaut has done for your site.</h1>
+          <p class="workspace-sub">A log of changes, health checks, and anything that needs your attention — in plain language.</p>
+          <div id="activity-feed" style="margin-top:1.5rem;">
+            <div style="color:var(--fog);font-size:0.85rem;">Loading activity…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connections management panel -->
+      <div class="workspace-panel" id="connections-panel">
+        <div class="workspace-shell">
+          <div class="workspace-eyebrow">Connected services</div>
+          <h1 class="workspace-title">Connect the tools your business already uses.</h1>
+          <p class="workspace-sub">Formaut can use connected services to sync products, payments, appointments, customers, campaigns, and other business context. Sensitive values are sent to the server over HTTPS and stored encrypted.</p>
+          <div class="connections-grid" id="connections-grid"></div>
+        </div>
+      </div>
+
+      <!-- Job dashboard panel -->
+      <div class="workspace-panel" id="jobs-panel">
+        <div class="workspace-shell">
+          <div class="workspace-eyebrow">Live work queue</div>
+          <h1 class="workspace-title">Watch Formaut jobs run instead of guessing what happened.</h1>
+          <p class="workspace-sub">Crawls, product syncs, homepage drafts, SEO plans, retries, and artifacts show here as durable queue work.</p>
+          <div class="jobs-toolbar">
+            <button class="small-action-btn primary" onclick="loadJobs()">Refresh jobs</button>
+            <button class="small-action-btn" onclick="consumeOneJob()">Run one queued job</button>
+          </div>
+          <div class="jobs-list" id="jobs-list"></div>
+        </div>
+      </div>
+
+
+
+      <!-- Approval and change-control panel -->
+      <div class="workspace-panel" id="reviews-panel">
+        <div class="workspace-shell">
+          <div class="workspace-eyebrow">Approval gate</div>
+          <h1 class="workspace-title">Review changes before Formaut publishes them.</h1>
+          <p class="workspace-sub">Generated artifacts become proposed changes. Approve, reject, request revision, inspect the change log, and create rollback snapshots from here.</p>
+          <div class="jobs-toolbar">
+            <button class="small-action-btn primary" onclick="loadReviews()">Refresh reviews</button>
+            <button class="small-action-btn" onclick="loadChangeLog()">Change log</button>
+            <button class="small-action-btn" onclick="loadSnapshots()">Published versions</button>
+          </div>
+          <div class="jobs-list" id="reviews-list"></div>
+        </div>
+      </div>
+
+  <!-- ── Settings panel ─────────────────────────────────────────────────── -->
+  <div class="workspace-panel" id="settings-panel">
+    <div class="workspace-shell" style="max-width:620px;">
+      <div class="workspace-eyebrow">Account</div>
+      <h1 class="workspace-title">Settings</h1>
+
+      <div style="margin-top:2rem;display:flex;flex-direction:column;gap:2rem;">
+
+        <!-- Account info -->
+        <div>
+          <div class="workspace-eyebrow" style="margin-bottom:0.75rem;">Account</div>
+          <div style="background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;" id="settings-email-display">—</div>
+                <div style="font-family:var(--f-mono);font-size:0.62rem;color:var(--smoke);margin-top:0.1rem;">Signed-in email</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;" id="settings-plan-display">—</div>
+                <div style="font-family:var(--f-mono);font-size:0.62rem;color:var(--smoke);margin-top:0.1rem;">Current plan</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;" id="settings-slug-display">—</div>
+                <div style="font-family:var(--f-mono);font-size:0.62rem;color:var(--smoke);margin-top:0.1rem;">Site identifier</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div>
+          <div class="workspace-eyebrow" style="margin-bottom:0.75rem;">Notifications</div>
+          <div style="background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;">Deployment alerts</div>
+                <div style="font-size:0.78rem;color:var(--fog);margin-top:0.1rem;">Email when a deploy fails or succeeds</div>
+              </div>
+              <div style="font-family:var(--f-mono);font-size:0.68rem;color:var(--smoke);">Coming soon</div>
+            </div>
+            <div style="height:1px;background:var(--wire);"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;">Key expiry warnings</div>
+                <div style="font-size:0.78rem;color:var(--fog);margin-top:0.1rem;">Alert before a connected key stops working</div>
+              </div>
+              <div style="font-family:var(--f-mono);font-size:0.68rem;color:var(--smoke);">Coming soon</div>
+            </div>
+            <div style="height:1px;background:var(--wire);"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;">Weekly summary</div>
+                <div style="font-size:0.78rem;color:var(--fog);margin-top:0.1rem;">What Formaut did for your site each week</div>
+              </div>
+              <div style="font-family:var(--f-mono);font-size:0.68rem;color:var(--smoke);">Coming soon</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sign out -->
+        <div>
+          <div class="workspace-eyebrow" style="margin-bottom:0.75rem;">Session</div>
+          <div style="background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.1rem 1.25rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:500;">Sign out</div>
+                <div style="font-size:0.78rem;color:var(--fog);margin-top:0.1rem;">Clears your session — your site stays live</div>
+              </div>
+              <button class="small-action-btn danger" onclick="signOut()">Sign out</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Billing panel ───────────────────────────────────────────────────── -->
+  <div class="workspace-panel" id="billing-panel">
+    <div class="workspace-shell" style="max-width:620px;">
+      <div class="workspace-eyebrow">Account</div>
+      <h1 class="workspace-title">Billing</h1>
+      <p class="workspace-sub">Manage your Formaut subscription and payment method.</p>
+      <div style="background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.5rem;margin-top:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+          <div>
+            <div style="font-size:1rem;font-weight:600;" id="billing-plan-display">—</div>
+            <div style="font-family:var(--f-mono);font-size:0.62rem;color:var(--smoke);margin-top:0.15rem;">Current plan</div>
+          </div>
+          <div class="connection-status connected" id="billing-status-display"><span class="dot"></span>Active</div>
+        </div>
+        <div style="font-size:0.82rem;color:var(--fog);line-height:1.6;">
+          Billing is managed through Stripe. Full subscription management — invoices, payment method, cancellation — will be available here once Stripe Connect is active.
+        </div>
+        <div style="margin-top:1.25rem;">
+          <button class="small-action-btn" disabled>Manage subscription — coming soon</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Operator panels ─────────────────────────────────────────────────── -->
+
+  <!-- All clients -->
+  <div class="workspace-panel" id="op-clients-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">All clients</h1>
+      <p class="workspace-sub">Health snapshot across every client. Click a client to act on their infrastructure.</p>
+      <div class="jobs-toolbar">
+        <button class="small-action-btn primary" onclick="loadOpClients()">Refresh</button>
+      </div>
+      <div id="op-clients-list" class="jobs-list"></div>
+    </div>
+  </div>
+
+  <!-- Job queue -->
+  <div class="workspace-panel" id="op-queue-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">Job queue</h1>
+      <p class="workspace-sub">Queue depth, running jobs, dead letters, and retry controls across all clients.</p>
+      <div class="jobs-toolbar">
+        <button class="small-action-btn primary" onclick="loadOpQueue()">Refresh</button>
+        <button class="small-action-btn" onclick="loadOpDeadLetter()">Dead letter</button>
+      </div>
+      <div id="op-queue-tabs" style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+        <button class="small-action-btn primary" onclick="showQueueTab('active')">Active</button>
+        <button class="small-action-btn" onclick="showQueueTab('dead')">Dead letter</button>
+      </div>
+      <div id="op-queue-list" class="jobs-list"></div>
+      <div id="op-dead-list" class="jobs-list" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Signals -->
+  <div class="workspace-panel" id="op-signals-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">Signals</h1>
+      <p class="workspace-sub">Tech and style signals pending review. Promote confirmed patterns to the KB.</p>
+      <div class="jobs-toolbar">
+        <button class="small-action-btn primary" onclick="loadOpSignals()">Refresh</button>
+      </div>
+      <div id="op-signals-list" class="jobs-list"></div>
+    </div>
+  </div>
+
+  <!-- Health -->
+  <div class="workspace-panel" id="op-health-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">System health</h1>
+      <p class="workspace-sub">Deployment health checks, operational events, and remediation plans awaiting approval.</p>
+      <div class="jobs-toolbar">
+        <button class="small-action-btn primary" onclick="loadOpHealth()">Refresh</button>
+      </div>
+      <div id="op-health-list" class="jobs-list"></div>
+    </div>
+  </div>
+
+  <!-- Deploy log -->
+  <div class="workspace-panel" id="op-deploys-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">Deploy log</h1>
+      <p class="workspace-sub">Recent Cloudflare Pages deployments across all clients. Status, commit messages, and build outcomes.</p>
+      <div class="jobs-toolbar">
+        <button class="small-action-btn primary" onclick="loadOpDeploys()">Refresh</button>
+        <input id="op-deploy-filter" placeholder="Filter by client slug…" style="background:var(--ash);border:1px solid var(--wire);border-radius:0.3rem;padding:0.3rem 0.6rem;color:var(--fog);font-size:0.78rem;font-family:var(--f-mono);width:200px;" oninput="filterOpDeploys(this.value)">
+      </div>
+      <div id="op-deploys-list" class="jobs-list"></div>
+    </div>
+  </div>
+
+  <!-- Env inspector -->
+  <div class="workspace-panel" id="op-env-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">Env inspector</h1>
+      <p class="workspace-sub">Verify platform environment variable presence and credential health. No values are displayed — only presence and status.</p>
+      <div class="jobs-toolbar">
+        <button class="small-action-btn primary" onclick="loadOpEnv()">Check env</button>
+      </div>
+      <div id="op-env-list" class="jobs-list"></div>
+    </div>
+  </div>
+
+  <!-- Prompt tester -->
+  <div class="workspace-panel" id="op-prompt-panel">
+    <div class="workspace-shell">
+      <div class="workspace-eyebrow" style="color:var(--ember);">Operator</div>
+      <h1 class="workspace-title">Prompt scaffold tester</h1>
+      <p class="workspace-sub">Send a raw prompt directly to the platform worker and inspect the full response. Use this to test system prompt changes, context injection, and new tool behavior without going through the dashboard chat.</p>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1rem;">
+        <div style="font-family:var(--f-mono);font-size:0.72rem;color:var(--smoke);">Client slug (optional — injects their context)</div>
+        <input id="op-prompt-slug" placeholder="e.g. bobs-plumbing" style="background:var(--ash);border:1px solid var(--wire);border-radius:0.4rem;padding:0.5rem 0.75rem;color:var(--fog);font-size:0.82rem;font-family:var(--f-mono);width:100%;max-width:300px;">
+        <div style="font-family:var(--f-mono);font-size:0.72rem;color:var(--smoke);">Prompt</div>
+        <textarea id="op-prompt-input" style="background:var(--ash);border:1px solid var(--wire);border-radius:0.4rem;padding:0.75rem;color:var(--paper);font-family:var(--f-mono);font-size:0.8rem;resize:vertical;min-height:120px;width:100%;" placeholder="Type a test prompt…"></textarea>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <button class="small-action-btn primary" onclick="runOpPromptTest()">Run test</button>
+          <select id="op-prompt-mode" style="background:var(--ash);border:1px solid var(--wire);border-radius:0.3rem;padding:0.3rem 0.5rem;color:var(--fog);font-size:0.75rem;font-family:var(--f-mono);">
+            <option value="client">Client mode</option>
+            <option value="operator">Operator mode</option>
+          </select>
+        </div>
+        <div id="op-prompt-result" style="display:none;background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1rem;font-family:var(--f-mono);font-size:0.78rem;color:var(--fog);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;line-height:1.6;margin-top:0.5rem;"></div>
+      </div>
+    </div>
+  </div>
+
+      <!-- Input -->
+      <div class="input-area">
+        <input type="file" id="file-input" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp" onchange="handleFileSelected(this)">
+        <div class="input-box" id="input-box">
+          <div id="file-chip-container"></div>
+          <textarea
+            id="chat-input"
+            class="input-textarea"
+            placeholder="Ask Formaut to build or change something…"
+            rows="1"
+            maxlength="2000"
+          ></textarea>
+          <div class="file-intent-bar" id="file-intent-bar">
+            <span>Use this as:</span>
+            <button class="file-intent-btn selected" id="intent-reference" onclick="setFileIntent('reference')">📎 Reference only</button>
+            <button class="file-intent-btn" id="intent-implement" onclick="setFileIntent('implement')">🔧 Add to my site</button>
+          </div>
+          <div class="input-bottom">
+            <span class="input-hint" id="input-hint">↵ Send</span>
+            <div class="input-actions">
+              <button class="attach-btn" id="attach-btn" onclick="document.getElementById('file-input').click()" title="Attach a file or photo">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13.5 7.5L7.5 13.5C6.1 14.9 3.9 14.9 2.5 13.5C1.1 12.1 1.1 9.9 2.5 8.5L8 3C8.9 2.1 10.3 2.1 11.2 3C12.1 3.9 12.1 5.3 11.2 6.2L6.2 11.2C5.8 11.6 5.1 11.6 4.7 11.2C4.3 10.8 4.3 10.1 4.7 9.7L9.5 4.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send">
+                <span>↑</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- ── Infrastructure panel ──────────────────────────────────────────────
+           Tier-aware rendering:
+           $10 runtime  — project registry, schema versions, health checks, repair
+           $50/$100     — plain-language status card only, no technical detail
+           Neither tier exposes site content, memory, or conversation data.
+      ──────────────────────────────────────────────────────────────────────── -->
+      <div class="workspace-panel" id="infrastructure-panel">
+        <div class="workspace-shell" style="max-width:700px;">
+          <div class="workspace-eyebrow">Your setup</div>
+          <h1 class="workspace-title" id="infra-title">Infrastructure</h1>
+          <p class="workspace-sub" id="infra-sub">Loading…</p>
+
+          <div id="infra-status-card" style="margin-top:1.5rem;display:flex;flex-direction:column;gap:0.75rem;"></div>
+
+          <!-- Technical detail — runtime tier only -->
+          <div id="infra-technical-detail" style="display:none;margin-top:2rem;">
+            <div class="workspace-eyebrow" style="margin-bottom:0.75rem;">Project registry</div>
+            <div id="infra-projects-list" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+
+            <div class="workspace-eyebrow" style="margin-top:2rem;margin-bottom:0.75rem;">Health checks</div>
+            <div id="infra-health-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+
+            <div style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+              <button class="small-action-btn" onclick="runInfraHealthCheck()">Run health check</button>
+              <button class="small-action-btn" onclick="runInfraRepair()">Check for repairs</button>
+            </div>
+          </div>
+
+          <div id="infra-loading" style="color:var(--fog);font-size:0.85rem;margin-top:1rem;display:none;">Loading…</div>
+        </div>
+      </div>
+
+
+      <!-- ── MCP / Connected agents panel ──────────────────────────────────────
+           All tiers:
+           - Agent list with revoke
+           - "Connect an agent" flow with generated setup instructions
+           - Token generation (all tiers — needed to connect Claude, Cursor, etc.)
+
+           Runtime ($10) also gets:
+           - Raw MCP server URL
+           - Scope permission toggles
+           - Technical token detail
+      ──────────────────────────────────────────────────────────────────────── -->
+      <div class="workspace-panel" id="mcp-panel">
+        <div class="workspace-shell" style="max-width:700px;">
+          <div class="workspace-eyebrow">Agent access</div>
+          <h1 class="workspace-title">Connected agents</h1>
+          <p class="workspace-sub" id="mcp-sub">Loading…</p>
+
+          <!-- How to connect card — all tiers, collapsed by default -->
+          <div id="mcp-howto-card" style="margin-top:1.5rem;background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;overflow:hidden;">
+            <button onclick="toggleMcpHowto()" style="width:100%;background:none;border:none;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:var(--paper);">
+              <span style="font-size:0.88rem;font-weight:500;">How to connect an AI agent to your site</span>
+              <span id="mcp-howto-chevron" style="font-size:0.75rem;color:var(--fog);transition:transform 0.2s;">▼</span>
+            </button>
+            <div id="mcp-howto-body" style="display:none;padding:0 1.25rem 1.25rem;">
+              <p style="font-size:0.82rem;color:var(--fog);line-height:1.6;margin-bottom:1rem;">
+                You can connect Claude, Cursor, ChatGPT, or any MCP-compatible agent to your site.
+                Once connected, the agent can read your site, make changes, and work with your business data —
+                within whatever permissions you've set.
+              </p>
+              <div style="font-size:0.82rem;color:var(--fog);line-height:1.8;">
+                <div style="margin-bottom:0.5rem;"><strong style="color:var(--paper);">1.</strong> Click "Add agent" below and give it a name.</div>
+                <div style="margin-bottom:0.5rem;"><strong style="color:var(--paper);">2.</strong> Copy the setup instructions that appear — they include everything the agent needs.</div>
+                <div style="margin-bottom:0.5rem;"><strong style="color:var(--paper);">3.</strong> Paste them into your agent (Claude's MCP settings, Cursor's config, ChatGPT's connector setup, etc.).</div>
+                <div><strong style="color:var(--paper);">4.</strong> The agent will appear in your list once it connects.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MCP server URL — runtime tier only, above agent list -->
+          <div id="mcp-endpoint-card" style="display:none;margin-top:1rem;background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.1rem 1.25rem;">
+            <div class="workspace-eyebrow" style="margin-bottom:0.5rem;">MCP server URL</div>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+              <code id="mcp-server-url" style="font-family:var(--f-mono);font-size:0.76rem;color:var(--paper);background:var(--ink);border:1px solid var(--wire);border-radius:0.35rem;padding:0.3rem 0.65rem;flex:1;min-width:0;word-break:break-all;">—</code>
+              <button class="small-action-btn" onclick="copyMcpUrl()">Copy</button>
+            </div>
+            <div style="font-size:0.76rem;color:var(--fog);margin-top:0.5rem;">Use this URL directly in MCP config files or agent tool settings.</div>
+          </div>
+
+          <!-- Active agents list — all tiers -->
+          <div id="mcp-agents-section" style="margin-top:1.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+              <div class="workspace-eyebrow" style="margin:0;">Active agents</div>
+              <button class="small-action-btn primary" onclick="toggleMcpAddForm()">+ Add agent</button>
+            </div>
+            <div id="mcp-agents-list" style="display:flex;flex-direction:column;gap:0.65rem;"></div>
+          </div>
+
+          <!-- Add agent form — all tiers, hidden until button pressed -->
+          <div id="mcp-add-section" style="display:none;margin-top:1.5rem;background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.25rem 1.5rem;">
+            <div class="workspace-eyebrow" style="margin-bottom:0.85rem;">Add an agent</div>
+            <div style="display:flex;flex-direction:column;gap:0.65rem;">
+              <div>
+                <div style="font-size:0.76rem;color:var(--fog);margin-bottom:0.3rem;">What are you connecting? (e.g. "Claude", "Cursor on my laptop")</div>
+                <input id="mcp-agent-name" placeholder="Agent name" style="width:100%;box-sizing:border-box;background:var(--ink);border:1px solid var(--wire);border-radius:0.35rem;padding:0.45rem 0.75rem;color:var(--paper);font-size:0.85rem;font-family:var(--f-sans);" />
+              </div>
+              <div>
+                <div style="font-size:0.76rem;color:var(--fog);margin-bottom:0.3rem;">Which permissions should it have?</div>
+                <div style="display:flex;flex-direction:column;gap:0.4rem;" id="mcp-new-agent-scopes"></div>
+              </div>
+              <div style="display:flex;gap:0.65rem;margin-top:0.25rem;">
+                <button class="small-action-btn primary" onclick="addMcpAgent()">Generate setup instructions</button>
+                <button class="small-action-btn" onclick="toggleMcpAddForm()">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setup instructions — shown after token generation, all tiers -->
+          <div id="mcp-setup-instructions" style="display:none;margin-top:1.5rem;background:var(--ash);border:1px solid var(--wire);border-radius:0.65rem;padding:1.25rem 1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+              <div class="workspace-eyebrow" style="margin:0;">Setup instructions</div>
+              <button class="small-action-btn" onclick="copySetupInstructions()">Copy all</button>
+            </div>
+            <p style="font-size:0.8rem;color:var(--fog);margin-bottom:1rem;line-height:1.5;">
+              Paste these into your AI agent. The token shown here won't be displayed again — copy it now.
+            </p>
+            <pre id="mcp-setup-text" style="background:var(--ink);border:1px solid var(--wire);border-radius:0.35rem;padding:1rem;font-family:var(--f-mono);font-size:0.72rem;color:var(--paper);white-space:pre-wrap;word-break:break-all;line-height:1.6;overflow-x:auto;"></pre>
+            <div style="margin-top:0.85rem;">
+              <button class="small-action-btn" onclick="dismissSetupInstructions()">Done — I've copied it</button>
+            </div>
+          </div>
+
+          <!-- Scope controls — runtime tier only -->
+          <div id="mcp-scopes-section" style="display:none;margin-top:2rem;">
+            <div class="workspace-eyebrow" style="margin-bottom:0.5rem;">Default permissions for new agents</div>
+            <p style="font-size:0.8rem;color:var(--fog);margin-bottom:0.85rem;line-height:1.5;">
+              These defaults apply when you add a new agent. You can override per-agent at creation time.
+            </p>
+            <div id="mcp-scopes-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+            <div style="margin-top:1rem;">
+              <button class="small-action-btn" onclick="saveMcpScopes()">Save defaults</button>
+            </div>
+          </div>
+
+          <div id="mcp-loading" style="color:var(--fog);font-size:0.85rem;margin-top:1rem;display:none;">Loading…</div>
+        </div>
+      </div>
+
+
+      <!-- PREVIEW PANEL — slides in when agent generates a preview -->
+      <div class="preview-panel" id="preview-panel">
+        <div class="preview-header">
+          <div class="preview-title">
+            <span>Preview</span>
+            <span class="preview-mode-badge" id="preview-mode-badge"></span>
+          </div>
+          <div class="preview-actions">
+            <button class="preview-btn open-tab" id="preview-open-tab-btn" onclick="openPreviewTab()" title="Open in new tab" style="display:none;">↗ Open</button>
+            <button class="preview-btn approve" id="preview-approve-btn" onclick="approvePreview()">✓ Looks good — commit it</button>
+            <button class="preview-btn close" onclick="closePreview()">✕</button>
+          </div>
+        </div>
+        <div class="preview-frame-wrap" id="preview-frame-wrap">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+  </div>
+
+
+
+  <div class="secret-modal-backdrop" id="audit-modal-backdrop" onclick="if(event.target.id==='audit-modal-backdrop')closeAuditModal()">
+    <div class="secret-modal">
+      <div class="secret-modal-top">
+        <div class="secret-modal-title" id="audit-modal-title">Key history</div>
+        <button class="modal-close" onclick="closeAuditModal()">×</button>
+      </div>
+      <div id="audit-modal-body" style="overflow-y:auto;max-height:52vh;"></div>
+    </div>
+  </div>
+
+  <!-- Secret / connection modal -->
+  <div class="secret-modal-backdrop" id="secret-modal-backdrop" onclick="if(event.target.id==='secret-modal-backdrop') closeConnectionModal()">
+    <div class="secret-modal">
+      <div class="secret-modal-top">
+        <div>
+          <div class="secret-modal-title" id="secret-modal-title">Connect service</div>
+          <div class="secret-modal-sub" id="secret-modal-sub">Paste the access token from the service. Formaut stores it encrypted and never shows it again.</div>
+        </div>
+        <button class="modal-close" onclick="closeConnectionModal()">×</button>
+      </div>
+      <div class="secret-field-label" id="secret-field-label">Access token</div>
+      <textarea class="secret-input" id="secret-input" autocomplete="off" spellcheck="false" placeholder="Paste token here…"></textarea>
+      <div class="secret-note"><span>🔒</span><span>This value is validated server-side, encrypted by the Worker, and stored as ciphertext. It is never written into chat history.</span></div>
+      <div class="secret-modal-actions">
+        <button class="small-action-btn" onclick="closeConnectionModal()">Cancel</button>
+        <button class="small-action-btn primary" id="secret-save-btn" onclick="saveConnectionSecret()">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/dashboard-state.js"></script>
+  <script src="/assets/js/dashboard-connections.js"></script>
+  <script src="/assets/js/dashboard-jobs-reviews.js"></script>
+  <script src="/assets/js/dashboard-chat.js"></script>
+  <script src="/assets/js/dashboard-panels.js"></script>
+  <script src="/assets/js/dashboard-infra-mcp.js"></script>
+  <script src="/assets/js/dashboard-auth-settings.js"></script>
+  <script src="/assets/js/dashboard-operator.js"></script>
+  <script src="/assets/js/dashboard-boot.js"></script>
+</body>
+</html>

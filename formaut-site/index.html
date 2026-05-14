@@ -1,0 +1,3292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formaut — Your site. Your data. No developer required.</title>
+  <meta name="description" content="An AI web agent that builds, deploys, and maintains your website through simple conversation. Own everything. Pay once a month.">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       TOKENS
+    ============================================================ */
+    :root {
+      --ink:       #0e0c0a;
+      --paper:     #f5f0e8;
+      --ember:     #c85a1e;
+      --ember-dim: #8c3d12;
+      --ash:       #2a2520;
+      --smoke:     #4a4540;
+      --fog:       #8a837a;
+      --wire:      #2e2a26;
+
+      --f-display: 'DM Sans', system-ui, sans-serif;
+      --f-body:    'DM Sans', system-ui, sans-serif;
+      --f-mono:    'DM Mono', monospace;
+
+      --max: 1160px;
+      --pad: clamp(1.5rem, 5vw, 4rem);
+    }
+
+    /* ============================================================
+       RESET + BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--f-body);
+      font-weight: 300;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: var(--ember); color: var(--paper); }
+
+    img { display: block; max-width: 100%; }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ============================================================
+       TEXTURE OVERLAY
+    ============================================================ */
+    /* No texture overlay — clean surface */
+
+    /* ============================================================
+       LAYOUT UTILITIES
+    ============================================================ */
+    .wrap {
+      max-width: var(--max);
+      margin-inline: auto;
+      padding-inline: var(--pad);
+    }
+
+    .section {
+      padding-block: clamp(5rem, 12vw, 10rem);
+    }
+
+    .label {
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fog);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ============================================================
+       NAV
+    ============================================================ */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1.25rem var(--pad);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(14,12,10,0.95) 0%, transparent 100%);
+      backdrop-filter: blur(2px);
+    }
+
+    .nav-logo {
+      font-family: var(--f-display);
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: var(--paper);
+    }
+
+    .nav-logo span { color: var(--ember); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--fog);
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--paper); }
+
+    .nav-cta {
+      background: var(--ember);
+      color: var(--paper) !important;
+      padding: 0.6rem 1.4rem;
+      font-weight: 500 !important;
+      transition: background 0.2s !important;
+    }
+
+    .nav-cta:hover { background: var(--ember-dim) !important; }
+
+    /* ============================================================
+       HERO
+    ============================================================ */
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding-block: 10rem 6rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,0,0,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* No grid overlay */
+
+    .hero-inner {
+      position: relative;
+      text-align: center;
+      max-width: 900px;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.2s forwards;
+    }
+
+    .hero-eyebrow::before,
+    .hero-eyebrow::after {
+      content: '';
+      display: block;
+      width: 2rem;
+      height: 1px;
+      background: var(--ember);
+      opacity: 0.5;
+    }
+
+    .hero-headline {
+      font-family: var(--f-display);
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      color: var(--paper);
+      margin-bottom: 1.75rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.4s forwards;
+    }
+
+    .hero-headline em {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--paper);
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--fog);
+      max-width: 560px;
+      margin-inline: auto;
+      margin-bottom: 3rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.6s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.8s forwards;
+    }
+
+    .btn-primary {
+      background: var(--ember);
+      color: var(--paper);
+      padding: 1rem 2.25rem;
+      font-family: var(--f-body);
+      font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      display: inline-block;
+    }
+
+    .btn-primary:hover {
+      background: var(--ember-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      color: var(--fog);
+      font-size: 0.9rem;
+      padding: 1rem 1.5rem;
+      border: 1px solid var(--wire);
+      transition: color 0.2s, border-color 0.2s;
+      display: inline-block;
+    }
+
+    .btn-ghost:hover {
+      color: var(--paper);
+      border-color: var(--smoke);
+    }
+
+    .hero-proof {
+      margin-top: 5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.8s 1s forwards;
+    }
+
+    .proof-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .proof-num {
+      font-family: var(--f-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--paper);
+    }
+
+    .proof-label {
+      font-size: 0.8rem;
+      color: var(--fog);
+      letter-spacing: 0.05em;
+    }
+
+    .proof-divider {
+      width: 1px;
+      height: 3rem;
+      background: var(--wire);
+    }
+
+    /* ============================================================
+       DEMO SPLIT — Claude-style animated chat + mock site
+    ============================================================ */
+    .demo-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* Chat wrap — full interface */
+    .demo-chat-wrap {
+      background: var(--ink);
+      border: 1px solid var(--wire);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .demo-chrome {
+      background: #0f0d0b;
+      padding: 0.65rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--wire);
+      flex-shrink: 0;
+    }
+
+    .demo-chrome-dots { display: flex; gap: 0.35rem; }
+
+    .chrome-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+    }
+
+    .chrome-dot.red    { background: #c0392b; }
+    .chrome-dot.yellow { background: #f39c12; }
+    .chrome-dot.green  { background: #27ae60; }
+
+    .demo-chrome-title {
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      color: var(--fog);
+      letter-spacing: 0.04em;
+      margin: 0 auto;
+    }
+
+    /* Message area */
+    .demo-msg-area {
+      padding: 1rem;
+      min-height: 280px;
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex: 1;
+    }
+
+    .demo-bubble-row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-start;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.35s, transform 0.35s;
+    }
+
+    .demo-bubble-row.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .demo-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      font-family: var(--f-mono);
+    }
+
+    .demo-avatar.user { background: var(--wire); color: var(--fog); }
+    .demo-avatar.bot  { background: var(--ember); color: var(--paper); }
+
+    .demo-bubble {
+      font-size: 0.82rem;
+      line-height: 1.55;
+      padding: 0.6rem 0.875rem;
+      max-width: 88%;
+    }
+
+    .demo-bubble.user {
+      background: var(--ash);
+      color: var(--paper);
+      border: 1px solid var(--wire);
+    }
+
+    .demo-bubble.bot {
+      background: rgba(200,90,30,0.07);
+      color: var(--paper);
+      border: 1px solid rgba(200,90,30,0.15);
+    }
+
+    /* Typing indicator */
+    .demo-typing {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .demo-typing span {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--ember);
+      opacity: 0.4;
+      animation: typingPulse 1.2s infinite;
+    }
+
+    .demo-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .demo-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingPulse {
+      0%, 80%, 100% { opacity: 0.4; transform: scale(0.85); }
+      40%            { opacity: 1;   transform: scale(1); }
+    }
+
+    /* Deploy status */
+    .demo-deploy-line {
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      color: var(--ember);
+      padding: 0.45rem 0.875rem;
+      background: rgba(200,90,30,0.06);
+      border-left: 2px solid var(--ember);
+      opacity: 0;
+      transition: opacity 0.4s;
+      margin: 0 0.25rem;
+    }
+
+    .demo-deploy-line.show { opacity: 1; }
+
+    /* Input bar — matches hero preview widget exactly */
+    .demo-input-wrap {
+      padding: 0.75rem;
+      border-top: 1px solid var(--wire);
+      background: var(--ink);
+      flex-shrink: 0;
+    }
+
+    .demo-input-box {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--wire);
+      background: var(--ash);
+      border-radius: 0.75rem;
+      padding: 0.7rem 0.6rem 0.5rem 0.875rem;
+      gap: 0.4rem;
+      transition: border-color 0.2s;
+    }
+
+    .demo-input-box.active { border-color: var(--ember); }
+
+    .demo-input-text {
+      font-size: 0.875rem;
+      color: var(--paper);
+      min-height: 1.3rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .demo-input-text.placeholder-style { color: var(--smoke); }
+
+    .demo-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 0.9em;
+      background: var(--ember);
+      vertical-align: text-bottom;
+      animation: cursorBlink 0.8s step-end infinite;
+    }
+
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    .demo-input-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.4rem;
+    }
+
+    .demo-input-label {
+      font-size: 0.72rem;
+      color: var(--fog);
+      font-family: var(--f-mono);
+      letter-spacing: 0.04em;
+    }
+
+    .demo-send-btn {
+      background: var(--ember);
+      color: var(--paper);
+      border: none;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 0.4rem;
+      font-size: 0.85rem;
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .demo-send-btn.sending {
+      transform: scale(0.88);
+      background: var(--ember-dim);
+    }
+
+    /* Mock site browser */
+    .demo-site {
+      border: 1px solid var(--wire);
+      overflow: hidden;
+      background: #f8f6f2;
+    }
+
+    .demo-site-bar {
+      background: #e8e4de;
+      padding: 0.5rem 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid #d5d0c8;
+    }
+
+    .demo-site-dots { display: flex; gap: 0.3rem; }
+    .demo-site-dots span {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #c8c4be;
+    }
+
+    .demo-site-url {
+      font-family: var(--f-mono);
+      font-size: 0.65rem;
+      color: #8a8480;
+      letter-spacing: 0.02em;
+    }
+
+    .url-waiting { color: #b0aca6; }
+    .url-live    { color: #2a6e2a; font-weight: 500; }
+
+    .demo-site-content {
+      min-height: 380px;
+      position: relative;
+    }
+
+    .demo-site-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f6f2;
+      transition: opacity 0.5s;
+    }
+
+    .demo-site-waiting {
+      font-size: 0.75rem;
+      color: #b0aca6;
+      font-family: var(--f-mono);
+      letter-spacing: 0.05em;
+    }
+
+    /* Maria's mock site */
+    .mock-site {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.7s;
+      background: #faf6f0;
+    }
+
+    .mock-site.visible { display: block; opacity: 1; }
+
+    .mock-nav {
+      background: #2c1f0e;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mock-nav-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f0e6d3;
+    }
+
+    .mock-nav-phone {
+      font-size: 0.7rem;
+      color: #9a8a78;
+      font-family: var(--f-mono);
+    }
+
+    .mock-hero {
+      background: #2c1f0e;
+      padding: 1.5rem 1.25rem 1.75rem;
+      text-align: center;
+      border-bottom: 3px solid #b8420a;
+    }
+
+    .mock-location {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #b8420a;
+      margin-bottom: 0.6rem;
+    }
+
+    .mock-headline {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f0e6d3;
+      line-height: 1.15;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .mock-sub {
+      font-size: 0.72rem;
+      color: #9a8a78;
+      margin-bottom: 1rem;
+    }
+
+    .mock-cta {
+      display: inline-block;
+      background: #b8420a;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.45rem 1.1rem;
+    }
+
+    .mock-phone-display {
+      display: block;
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #f0e6d3;
+      font-family: monospace;
+    }
+
+    .mock-services {
+      background: #faf6f0;
+      padding: 1rem 1.25rem;
+    }
+
+    .mock-services-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #b8420a;
+      margin-bottom: 0.75rem;
+      text-align: center;
+    }
+
+    .mock-services-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: #e8d5bc;
+      border: 1px solid #e8d5bc;
+    }
+
+    .mock-service {
+      background: #fff;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #2c1f0e;
+    }
+
+    @media (max-width: 900px) {
+      .demo-split { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================================
+       CONVERSATION DEMO
+    ============================================================ */
+    .demo {
+      background: var(--ash);
+      border-top: 1px solid var(--wire);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .demo-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+
+    .demo-text .hero-headline {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      opacity: 1;
+      animation: none;
+      text-align: left;
+      margin-bottom: 1.25rem;
+    }
+
+    .demo-text p {
+      color: var(--fog);
+      margin-bottom: 1.5rem;
+      font-size: 1.05rem;
+    }
+
+    .demo-chat {
+      background: var(--ink);
+      border: 1px solid var(--wire);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chat-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--wire);
+      margin-bottom: 0.5rem;
+    }
+
+    .chat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .chat-dot:nth-child(1) { background: #c0392b; }
+    .chat-dot:nth-child(2) { background: #f39c12; }
+    .chat-dot:nth-child(3) { background: #27ae60; }
+
+    .chat-title {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      color: var(--fog);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .chat-msg {
+      display: flex;
+      gap: 0.75rem;
+      animation: fadeUp 0.5s forwards;
+    }
+
+    .chat-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      font-size: 0.65rem;
+      font-weight: 500;
+      font-family: var(--f-mono);
+    }
+
+    .avatar-user { background: var(--wire); color: var(--fog); }
+    .avatar-bot  { background: var(--ember); color: var(--paper); }
+
+    .chat-bubble {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      padding: 0.75rem 1rem;
+      max-width: 85%;
+    }
+
+    .bubble-user {
+      background: var(--ash);
+      color: var(--paper);
+      border: 1px solid var(--wire);
+    }
+
+    .bubble-bot {
+      background: rgba(200,90,30,0.08);
+      color: var(--paper);
+      border: 1px solid rgba(200,90,30,0.2);
+    }
+
+    .bubble-bot .typing {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .typing span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--ember);
+      animation: blink 1.2s infinite;
+    }
+
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    .chat-status {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      color: var(--ember);
+      padding: 0.5rem 0.75rem;
+      background: rgba(200,90,30,0.06);
+      border-left: 2px solid var(--ember);
+    }
+
+    /* ============================================================
+       OWNERSHIP SECTION
+    ============================================================ */
+    .ownership {
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .own-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+      margin-top: 4rem;
+    }
+
+    .own-card {
+      background: var(--ink);
+      padding: 2.5rem 2rem;
+      transition: background 0.3s;
+    }
+
+    .own-card:hover { background: var(--ash); }
+
+    .own-icon {
+      font-size: 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .own-title {
+      font-family: var(--f-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.75rem;
+    }
+
+    .own-body {
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    .domain-callout {
+      margin-top: 3rem;
+      padding: 1.75rem 2rem;
+      border: 1px solid var(--ember);
+      background: rgba(200,90,30,0.05);
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+    }
+
+    .domain-callout-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    .domain-callout h3 {
+      font-family: var(--f-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.5rem;
+    }
+
+    .domain-callout p {
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.6;
+    }
+
+    .domain-callout strong { color: var(--ember); }
+
+    /* ============================================================
+       ADMIN PANEL PROOF
+    ============================================================ */
+    .admin-proof {
+      background: var(--ink);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .admin-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+
+    .admin-body {
+      color: var(--fog);
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+
+    .admin-callout {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1.25rem 1.5rem;
+      border-left: 3px solid var(--ember);
+      background: rgba(200,90,30,0.05);
+      font-size: 0.875rem;
+      color: var(--fog);
+      line-height: 1.65;
+      margin-top: 2rem;
+    }
+
+    .admin-callout em { color: var(--paper); font-style: normal; font-weight: 500; }
+
+    .admin-callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .admin-panel-demo {
+      background: #141210;
+      border: 1px solid var(--wire);
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    .panel-header {
+      padding: 0.75rem 1rem;
+      background: #0f0d0b;
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .panel-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* Cards — one per content group */
+    .panel-card {
+      background: #1c1814;
+      border: 1px solid #2a2520;
+      border-top: 2px solid var(--ember);
+      overflow: hidden;
+    }
+
+    .panel-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid #2a2520;
+    }
+
+    .panel-section-label {
+      font-family: var(--f-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fog);
+    }
+
+    .panel-card-count {
+      font-family: var(--f-mono);
+      font-size: 0.6rem;
+      color: var(--smoke);
+      background: #0f0d0b;
+      padding: 0.15rem 0.5rem;
+      border: 1px solid #2a2520;
+    }
+
+    .panel-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid #221e1a;
+      gap: 2rem;
+      transition: background 0.15s;
+    }
+
+    .panel-field:last-child { border-bottom: none; }
+    .panel-field:hover { background: rgba(255,255,255,0.02); }
+
+    .panel-field-label {
+      font-size: 0.78rem;
+      color: var(--fog);
+      flex-shrink: 0;
+      font-weight: 300;
+    }
+
+    .panel-field-value {
+      font-size: 0.82rem;
+      color: var(--paper);
+      text-align: right;
+      font-weight: 400;
+    }
+
+    .panel-field-value.editable {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .edit-hint {
+      font-family: var(--f-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      color: var(--ember);
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      text-transform: uppercase;
+      border: 1px solid rgba(200,90,30,0.3);
+      padding: 0.1rem 0.35rem;
+    }
+
+    .panel-field:hover .edit-hint { opacity: 1; }
+
+    .panel-save {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: #0f0d0b;
+      border-top: 1px solid var(--wire);
+      margin-top: 0;
+    }
+
+    .save-btn {
+      background: var(--ember);
+      color: var(--paper);
+      font-family: var(--f-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.45rem 1.1rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .save-btn:hover { background: var(--ember-dim); }
+
+    .save-note {
+      font-family: var(--f-mono);
+      font-size: 0.65rem;
+      color: var(--fog);
+    }
+
+    @media (max-width: 900px) {
+      .admin-inner { grid-template-columns: 1fr; gap: 3rem; }
+    }
+
+    /* ============================================================
+       WORKS FOR
+    ============================================================ */
+    .works {
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .works-intro {
+      max-width: 600px;
+      margin-bottom: 4rem;
+    }
+
+    .works-intro p {
+      color: var(--fog);
+      font-size: 1.05rem;
+      margin-top: 1rem;
+    }
+
+    .works-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+    }
+
+    .works-item {
+      background: var(--ink);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: background 0.2s;
+      cursor: default;
+    }
+
+    .works-item:hover { background: var(--ash); }
+
+    .works-emoji { font-size: 1.1rem; flex-shrink: 0; }
+
+    .works-name {
+      font-size: 0.875rem;
+      color: var(--paper);
+      font-weight: 400;
+    }
+
+    .works-plus {
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--ash);
+      border: 1px solid var(--wire);
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      color: var(--fog);
+    }
+
+    .pill-highlight {
+      background: rgba(200,90,30,0.1);
+      border-color: rgba(200,90,30,0.3);
+      color: var(--ember);
+    }
+
+    /* ============================================================
+       HOW IT WORKS
+    ============================================================ */
+    .how {
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .how-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
+      margin-top: 4rem;
+      position: relative;
+    }
+
+    .how-steps::before {
+      content: '';
+      position: absolute;
+      top: 2.25rem;
+      left: calc(16.66% + 1rem);
+      right: calc(16.66% + 1rem);
+      height: 1px;
+      background: linear-gradient(90deg, var(--ember) 0%, var(--ember) 100%);
+      opacity: 0.25;
+    }
+
+    .how-step { position: relative; }
+
+    .step-num {
+      width: 4rem;
+      height: 4rem;
+      border: 1px solid var(--ember);
+      display: grid;
+      place-items: center;
+      font-family: var(--f-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ember);
+      margin-bottom: 1.5rem;
+      background: var(--ink);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-title {
+      font-family: var(--f-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.75rem;
+    }
+
+    .step-body {
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    /* ============================================================
+       TIPS SECTION
+    ============================================================ */
+    .tips {
+      background: var(--ash);
+      border-top: 1px solid var(--wire);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .tips-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .tips-headline {
+      font-family: var(--f-display);
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--paper);
+      margin-bottom: 1rem;
+    }
+
+    .tips-sub {
+      font-size: 0.95rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    .tips-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .tip {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      padding: 1.5rem;
+      background: var(--ink);
+      border: 1px solid var(--wire);
+    }
+
+    .tip-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    .tip-title {
+      font-weight: 500;
+      color: var(--paper);
+      margin-bottom: 0.35rem;
+      font-size: 0.95rem;
+    }
+
+    .tip-body {
+      font-size: 0.875rem;
+      color: var(--fog);
+      line-height: 1.6;
+    }
+
+    /* ============================================================
+       PRICING
+    ============================================================ */
+    .pricing {
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .pricing-intro {
+      max-width: 560px;
+      margin-bottom: 4rem;
+    }
+
+    .pricing-intro p {
+      color: var(--fog);
+      margin-top: 1rem;
+      font-size: 1.05rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+    }
+
+    .price-card {
+      background: var(--ink);
+      padding: 3rem 2.5rem;
+      position: relative;
+    }
+
+    .price-card.featured {
+      background: var(--ash);
+    }
+
+    .price-badge {
+      position: absolute;
+      top: -1px;
+      right: 2rem;
+      background: var(--ember);
+      color: var(--paper);
+      font-family: var(--f-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+    }
+
+    .price-tier {
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fog);
+      margin-bottom: 1rem;
+    }
+
+    .price-amount {
+      font-family: var(--f-display);
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--paper);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .price-amount sup {
+      font-size: 1.5rem;
+      vertical-align: super;
+    }
+
+    .price-period {
+      font-size: 0.85rem;
+      color: var(--fog);
+      margin-bottom: 2rem;
+    }
+
+    .price-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .price-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.4;
+    }
+
+    .price-features li::before {
+      content: '→';
+      color: var(--fog);
+      flex-shrink: 0;
+      margin-top: 0.05rem;
+    }
+
+    .price-features li strong { color: var(--paper); }
+
+    .price-cta {
+      display: block;
+      text-align: center;
+      padding: 1rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .cta-primary {
+      background: var(--ember);
+      color: var(--paper);
+      border: 1px solid var(--ember);
+    }
+
+    .cta-primary:hover { background: var(--ember-dim); }
+
+    .cta-secondary {
+      border: 1px solid var(--wire);
+      color: var(--fog);
+    }
+
+    .cta-secondary:hover {
+      border-color: var(--smoke);
+      color: var(--paper);
+    }
+
+    .overflow-note {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: var(--ash);
+      border: 1px solid var(--wire);
+      font-size: 0.875rem;
+      color: var(--fog);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .overflow-note strong { color: var(--paper); }
+
+    /* ============================================================
+       FAQ
+    ============================================================ */
+    .faq {
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+      margin-top: 4rem;
+    }
+
+    .faq-item {
+      background: var(--ink);
+      padding: 2rem;
+      transition: background 0.2s;
+    }
+
+    .faq-item:hover { background: var(--ash); }
+
+    .faq-q {
+      font-family: var(--f-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.75rem;
+    }
+
+    .faq-a {
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    .faq-a strong { color: var(--paper); }
+    .faq-a a { color: var(--ember); text-decoration: underline; text-underline-offset: 3px; }
+
+    /* ============================================================
+       FOOTER CTA
+    ============================================================ */
+    .footer-cta {
+      text-align: center;
+      padding-block: clamp(5rem, 10vw, 8rem);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .footer-cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      /* clean background */
+      pointer-events: none;
+    }
+
+    .footer-cta h2 {
+      font-family: var(--f-display);
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      color: var(--paper);
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-cta h2 em {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--ember);
+    }
+
+    .footer-cta p {
+      color: var(--fog);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin-inline: auto;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ============================================================
+       FOOTER
+    ============================================================ */
+    footer {
+      border-top: 1px solid var(--wire);
+      padding: 2rem var(--pad);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-logo {
+      font-family: var(--f-display);
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--paper);
+    }
+
+    .footer-logo span { color: var(--ember); }
+
+    .footer-meta {
+      font-size: 0.8rem;
+      color: var(--fog);
+    }
+
+    .footer-powered {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      color: var(--fog);
+      letter-spacing: 0.05em;
+    }
+
+    .footer-powered strong { color: var(--ember); }
+
+    /* ============================================================
+       ANIMATIONS
+    ============================================================ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0; transform: scale(0.8); }
+      40%            { opacity: 1; transform: scale(1); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s, transform 0.7s;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .demo-inner { grid-template-columns: 1fr; gap: 3rem; }
+      .own-grid { grid-template-columns: 1fr; }
+      .how-steps { grid-template-columns: 1fr; gap: 2rem; }
+      .how-steps::before { display: none; }
+      .tips-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .faq-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; text-align: center; }
+    }
+
+    @media (max-width: 600px) {
+      .works-grid { grid-template-columns: 1fr 1fr; }
+      .proof-divider { display: none; }
+    }
+    /* ============================================================
+       HOW IT WORKS — COMPARISON
+    ============================================================ */
+    .how-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+      margin-bottom: 4rem;
+    }
+
+    .how-compare-item {
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .how-compare-them {
+      background: var(--ash);
+    }
+
+    .how-compare-us {
+      background: rgba(200,90,30,0.08);
+      border-left: 1px solid rgba(200,90,30,0.3);
+    }
+
+    .how-compare-label {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fog);
+      margin-bottom: 0.25rem;
+    }
+
+    .how-compare-us .how-compare-label {
+      color: var(--ember);
+    }
+
+    .how-compare-time {
+      font-family: var(--f-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--smoke);
+      line-height: 1.1;
+    }
+
+    .how-compare-us .how-compare-time {
+      color: var(--paper);
+      font-size: 1.5rem;
+    }
+
+    .how-compare-detail {
+      font-size: 0.825rem;
+      color: var(--fog);
+      line-height: 1.55;
+      margin-top: 0.25rem;
+    }
+
+    .how-compare-us .how-compare-detail {
+      color: var(--paper);
+    }
+
+    @media (max-width: 700px) {
+      .how-compare { grid-template-columns: 1fr; }
+      .how-compare-us { border-left: none; border-top: 1px solid rgba(200,90,30,0.3); }
+    }
+
+    /* ============================================================
+       STAYING SECTION
+    ============================================================ */
+    .staying {
+      background: var(--ink);
+      border-top: 1px solid var(--wire);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .staying-intro {
+      color: var(--fog);
+      font-size: 1.05rem;
+      max-width: 680px;
+      margin-top: 1.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .staying-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 4rem;
+      border: 1px solid var(--wire);
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 0;
+      border-bottom: 1px solid var(--wire);
+      transition: background 0.2s;
+    }
+
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-item:hover { background: var(--ash); }
+
+    .timeline-marker {
+      padding: 1.75rem 1.5rem;
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fog);
+      border-right: 1px solid var(--wire);
+      display: flex;
+      align-items: flex-start;
+      padding-top: 1.85rem;
+    }
+
+    .timeline-content {
+      padding: 1.75rem 2rem;
+    }
+
+    .timeline-title {
+      font-family: var(--f-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.5rem;
+    }
+
+    .timeline-body {
+      font-size: 0.875rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    .staying-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--wire);
+      border: 1px solid var(--wire);
+      margin-bottom: 2rem;
+    }
+
+    .compare-col { background: var(--ink); }
+
+    .compare-header {
+      padding: 1rem 1.5rem;
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .compare-leave { color: var(--fog); }
+    .compare-stay  { color: var(--ember); background: rgba(200,90,30,0.05); }
+
+    .compare-item {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(58,53,48,0.5);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .compare-item:last-child { border-bottom: none; }
+    .compare-item.good  { color: var(--paper); }
+    .compare-item.gone  { color: var(--smoke); }
+
+    .staying-callout {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      padding: 1.75rem 2rem;
+      border: 1px solid var(--ember);
+      background: rgba(200,90,30,0.05);
+    }
+
+    .staying-callout-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .staying-callout h3 {
+      font-family: var(--f-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.5rem;
+    }
+
+    .staying-callout p {
+      font-size: 0.9rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    @media (max-width: 900px) {
+      .timeline-item { grid-template-columns: 1fr; }
+      .timeline-marker { border-right: none; border-bottom: 1px solid var(--wire); padding: 1rem 1.5rem; }
+      .staying-comparison { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================================
+       ABOUT SECTION
+    ============================================================ */
+    .about {
+      background: var(--ash);
+      border-top: 1px solid var(--wire);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .about-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .about-body p {
+      color: var(--fog);
+      font-size: 1rem;
+      line-height: 1.8;
+      margin-bottom: 1.25rem;
+    }
+
+    .about-body em {
+      color: var(--paper);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    .about-body p:last-of-type { margin-bottom: 2rem; }
+
+    .about-sig {
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--wire);
+    }
+
+    .about-sig-name {
+      font-family: var(--f-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--paper);
+      margin-bottom: 0.25rem;
+    }
+
+    .about-sig-title {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fog);
+    }
+
+    @media (max-width: 900px) {
+      .about-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    }
+
+    /* ============================================================
+       HERO ONBOARDING NOTE
+    ============================================================ */
+    .hero-onboarding-note {
+      margin-top: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--fog);
+      opacity: 0;
+      animation: fadeUp 0.8s 1s forwards;
+    }
+
+    .hero-onboarding-note a {
+      color: var(--ember);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      margin-left: 0.35rem;
+      transition: color 0.2s;
+    }
+
+    .hero-onboarding-note a:hover { color: var(--paper); }
+
+    /* ============================================================
+       AI PARTNER SECTION
+    ============================================================ */
+    .ai-partner {
+      background: var(--ash);
+      border-top: 1px solid var(--wire);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .ai-partner-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .ai-partner-body {
+      color: var(--fog);
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+
+    .ai-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .flow-step {
+      background: var(--ink);
+      border: 1px solid var(--wire);
+      padding: 1.5rem;
+    }
+
+    .flow-tool {
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fog);
+      margin-bottom: 0.5rem;
+    }
+
+    .flow-desc {
+      font-size: 0.875rem;
+      color: var(--fog);
+      line-height: 1.55;
+    }
+
+    .flow-arrow {
+      text-align: center;
+      color: var(--ember);
+      font-size: 1.25rem;
+      padding: 0.5rem 0;
+      background: var(--ink);
+      border-left: 1px solid var(--wire);
+      border-right: 1px solid var(--wire);
+    }
+
+    .flow-step-formaut {
+      background: rgba(200,90,30,0.08);
+      border-color: rgba(200,90,30,0.3);
+    }
+
+    .flow-tool-formaut {
+      font-family: var(--f-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ember);
+      margin-bottom: 0.5rem;
+    }
+
+    .flow-desc-formaut {
+      font-size: 0.875rem;
+      color: var(--paper);
+      line-height: 1.55;
+    }
+
+    .flow-export {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-top: 1.25rem;
+      padding: 1.25rem;
+      background: var(--ink);
+      border: 1px solid var(--wire);
+      border-top: none;
+    }
+
+    .flow-export-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+    .flow-export-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--paper);
+      margin-bottom: 0.35rem;
+    }
+
+    .flow-export-body {
+      font-size: 0.8rem;
+      color: var(--fog);
+      line-height: 1.6;
+    }
+
+    .future-note {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      margin-top: 3rem;
+      padding: 1.75rem 2rem;
+      border: 1px solid var(--wire);
+      background: var(--ink);
+    }
+
+    .future-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .future-title {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 0.5rem;
+    }
+
+    .future-body {
+      font-size: 0.875rem;
+      color: var(--fog);
+      line-height: 1.65;
+    }
+
+    .future-body strong { color: var(--paper); }
+
+    @media (max-width: 900px) {
+      .ai-partner-inner { grid-template-columns: 1fr; gap: 3rem; }
+    }
+
+    /* ============================================================
+       GUIDED ONBOARDING FORM
+    ============================================================ */
+    .onboarding {
+      background: var(--ash);
+      border-top: 1px solid var(--wire);
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .onboarding-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .onboarding-form {
+      background: var(--ink);
+      border: 1px solid var(--wire);
+      padding: 2rem;
+    }
+
+    .form-section-label {
+      font-family: var(--f-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 1rem;
+    }
+
+    .form-field {
+      margin-bottom: 1.1rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--fog);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--ash);
+      border: 1px solid var(--wire);
+      color: var(--paper);
+      font-family: var(--f-body);
+      font-size: 0.875rem;
+      padding: 0.65rem 0.875rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus { border-color: var(--ember); }
+    .form-input::placeholder { color: var(--smoke); }
+
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-checkboxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--fog);
+      cursor: pointer;
+    }
+
+    .form-check input[type="checkbox"] {
+      accent-color: var(--ember);
+      width: 14px;
+      height: 14px;
+    }
+
+    .form-submit {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--wire);
+    }
+
+    .form-note {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--fog);
+      font-family: var(--f-mono);
+    }
+
+    @media (max-width: 900px) {
+      .onboarding-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+      .form-checkboxes { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================================
+       PREVIEW WIDGET
+    ============================================================ */
+    .preview-widget {
+      margin-top: 2.5rem;
+      width: 100%;
+      max-width: 640px;
+      margin-inline: auto;
+      opacity: 0;
+      animation: fadeUp 0.8s 1s forwards;
+    }
+
+    .preview-input-row {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--wire);
+      background: var(--ash);
+      transition: border-color 0.2s;
+      border-radius: 0.75rem;
+      padding: 0.875rem 0.75rem 0.6rem 1rem;
+      gap: 0.5rem;
+    }
+
+    .preview-input-row:focus-within {
+      border-color: var(--ember);
+    }
+
+    .preview-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0;
+      font-family: var(--f-body);
+      font-size: 0.95rem;
+      color: var(--paper);
+      font-weight: 300;
+      resize: none;
+      min-height: 1.4rem;
+      max-height: 160px;
+      overflow-y: auto;
+      line-height: 1.5;
+      display: block;
+      width: 100%;
+    }
+
+    .preview-input::placeholder { color: var(--smoke); }
+
+    .preview-input-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .preview-send-label {
+      font-size: 0.75rem;
+      color: var(--fog);
+      font-family: var(--f-mono);
+      letter-spacing: 0.04em;
+    }
+
+    .preview-btn {
+      background: var(--ember);
+      color: var(--paper);
+      border: none;
+      width: 1.85rem;
+      height: 1.85rem;
+      min-width: 1.85rem;
+      min-height: 1.85rem;
+      border-radius: 0.4rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .preview-btn:hover { background: var(--ember-dim); }
+    .preview-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .preview-btn-text { display: flex; align-items: center; justify-content: center; }
+    .preview-btn-loading { font-size: 0.55rem; }
+
+    .preview-hint {
+      font-size: 0.75rem;
+      color: var(--smoke);
+      text-align: center;
+      margin-top: 0.6rem;
+      font-family: var(--f-mono);
+      letter-spacing: 0.05em;
+    }
+
+    .preview-error {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(200,90,30,0.1);
+      border: 1px solid rgba(200,90,30,0.3);
+      font-size: 0.85rem;
+      color: var(--ember);
+      text-align: center;
+    }
+
+    /* Preview result */
+    .preview-result {
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 900px;
+      margin-inline: auto;
+      border: 1px solid var(--ember);
+      background: var(--ash);
+      animation: fadeUp 0.5s forwards;
+    }
+
+    .preview-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .preview-result-label {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ember);
+    }
+
+    .preview-claim-btn {
+      font-size: 0.8rem;
+      color: var(--ember);
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .preview-frame-wrap {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .preview-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .preview-claim-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--wire);
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .preview-claim-text {
+      font-family: var(--f-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--paper);
+    }
+
+    .name-followup {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--wire);
+      background: var(--ash);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .name-followup-text {
+      font-size: 0.85rem;
+      color: var(--fog);
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    .name-followup-input-row {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--wire);
+    }
+
+    @media (max-width: 600px) {
+      .preview-input-row { flex-direction: column; }
+      .preview-btn { width: 100%; }
+      .preview-frame-wrap { height: 400px; }
+      .preview-claim-bar { flex-direction: column; text-align: center; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">Form<span>aut</span></div>
+    <ul class="nav-links">
+      <li><a href="#ai-partner">Already use AI?</a></li>
+      <li><a href="#works">Who it's for</a></li>
+      <li><a href="#staying">Why stay</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#start" class="nav-cta">Get started</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-inner wrap">
+      <div class="hero-eyebrow">Powered by Claude &nbsp;·&nbsp; Built for your business</div>
+      <h1 class="hero-headline">
+        Your site.<br>
+        Your data.<br>
+        No developer required.
+      </h1>
+      <p class="hero-sub">
+        Formaut is an AI web agent that builds, deploys, and maintains your website through simple conversation — and hands you everything when it's done.
+      </p>
+      <div class="hero-actions">
+        <a href="#start" class="btn-primary">Start building — $50/mo</a>
+        <a href="#how" class="btn-ghost">See how it works →</a>
+      </div>
+
+      <!-- PREVIEW WIDGET -->
+      <div class="preview-widget" id="preview-widget">
+        <div class="preview-input-row">
+          <textarea
+            id="preview-input"
+            class="preview-input"
+            placeholder="Describe your business — e.g. 'I run a cleaning company in Austin'"
+            maxlength="600"
+            autocomplete="off"
+            rows="1"
+          ></textarea>
+          <div class="preview-input-bottom">
+            <span class="preview-send-label">See your site →</span>
+            <button class="preview-btn" id="preview-btn" onclick="buildPreview()">
+              <span class="preview-btn-text">↑</span>
+              <span class="preview-btn-loading" style="display:none;">•</span>
+            </button>
+          </div>
+        </div>
+        <div class="preview-hint">Free preview · No account needed · See your site in seconds</div>
+        <div class="preview-error" id="preview-error" style="display:none;"></div>
+      </div>
+
+      <!-- PREVIEW RESULT (hidden until generated) -->
+      <div class="preview-result" id="preview-result" style="display:none;">
+        <div class="preview-result-header">
+          <div class="preview-result-label">✓ Your site — preview</div>
+          <div class="preview-result-actions">
+            <a href="#start" class="preview-claim-btn">Make it permanent →</a>
+          </div>
+        </div>
+        <div class="preview-frame-wrap">
+          <iframe id="preview-frame" class="preview-frame" sandbox="allow-same-origin"></iframe>
+        </div>
+        <div class="preview-claim-bar">
+          <div class="preview-claim-text">This is your site. Ready to own it?</div>
+          <a href="#start" class="btn-primary" style="padding: 0.75rem 1.75rem; font-size: 0.9rem;">
+            Set it up on your accounts — $50/mo
+          </a>
+        </div>
+        <div class="name-followup" id="name-followup" style="display:none;">
+          <div class="name-followup-text">What's your business called? I'll update the preview.</div>
+          <div class="name-followup-input-row">
+            <input type="text" id="name-input" class="preview-input" placeholder="e.g. Nashville Cuts" maxlength="80" style="flex:1; padding: 0.65rem 1rem; font-size: 0.875rem;">
+            <button class="preview-btn" onclick="submitName()" style="padding: 0.65rem 1.25rem; font-size: 0.8rem;">Update →</button>
+          </div>
+        </div>
+      </div>
+      <div class="hero-proof">
+        <div class="proof-item">
+          <span class="proof-num">~$10</span>
+          <span class="proof-label">Domain per year</span>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-item">
+          <span class="proof-num">$0</span>
+          <span class="proof-label">Setup fee</span>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-item">
+          <span class="proof-num">100%</span>
+          <span class="proof-label">Yours to keep</span>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-item">
+          <span class="proof-num">∞</span>
+          <span class="proof-label">Sites you can build</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section class="demo section">
+    <div class="wrap">
+      <div class="demo-text reveal" style="max-width:600px; margin-bottom:3rem;">
+        <div class="label">How it works</div>
+        <h2 class="hero-headline" style="font-size: clamp(2rem, 4vw, 3rem); opacity:1; animation:none; text-align:left;">
+          One conversation.<br>A site that's live.
+        </h2>
+        <p style="color:var(--fog); font-size:1.05rem; line-height:1.7;">Describe your business. Formaut builds, deploys, and hands you the keys — in minutes. Watch it happen below.</p>
+      </div>
+
+      <div class="demo-split reveal">
+        <!-- Left: animated chat interface -->
+        <div class="demo-chat-wrap" id="demo-chat">
+          <!-- Chrome bar -->
+          <div class="demo-chrome">
+            <div class="demo-chrome-dots">
+              <span class="chrome-dot red"></span>
+              <span class="chrome-dot yellow"></span>
+              <span class="chrome-dot green"></span>
+            </div>
+            <div class="demo-chrome-title">formaut — maria's cleaning co</div>
+          </div>
+
+          <!-- Message history -->
+          <div class="demo-msg-area" id="demo-msg-area"></div>
+
+          <!-- Input bar — matches hero widget style -->
+          <div class="demo-input-wrap">
+            <div class="demo-input-box" id="demo-input-box">
+              <div class="demo-input-text" id="demo-input-text"></div>
+              <div class="demo-input-bottom">
+                <span class="demo-input-label">See your site</span>
+                <button class="demo-send-btn" id="demo-send-btn">↑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: mock site browser -->
+        <div class="demo-site" id="demo-site">
+          <div class="demo-site-bar">
+            <div class="demo-site-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="demo-site-url" id="demo-url">
+              <span class="url-waiting">building your site...</span>
+            </div>
+          </div>
+          <div class="demo-site-content">
+            <div class="demo-site-placeholder" id="demo-placeholder">
+              <div class="demo-site-waiting">↑ Watch the conversation</div>
+            </div>
+            <div class="mock-site" id="mock-site">
+              <div class="mock-nav">
+                <div class="mock-nav-name">Maria's Cleaning Co</div>
+                <div class="mock-nav-phone">512-555-0184</div>
+              </div>
+              <div class="mock-hero">
+                <div class="mock-location">Austin, Texas</div>
+                <div class="mock-headline">Professional Cleaning.<br>Residential &amp; Commercial.</div>
+                <div class="mock-sub">Trusted, insured, and always on time.</div>
+                <div class="mock-cta">Get a Free Quote</div>
+                <span class="mock-phone-display">512-555-0184</span>
+              </div>
+              <div class="mock-services">
+                <div class="mock-services-label">What we do</div>
+                <div class="mock-services-grid">
+                  <div class="mock-service">Residential</div>
+                  <div class="mock-service">Commercial</div>
+                  <div class="mock-service">Deep Clean</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI PARTNER -->
+  <section id="ai-partner" class="ai-partner section">
+    <div class="wrap">
+      <div class="ai-partner-inner">
+        <div class="ai-partner-text reveal">
+          <div class="label">Works on its own. Works even better with what you have.</div>
+          <h2 class="hero-headline" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+            Formaut gives you<br>everything you need.<br><em>Full stop.</em>
+          </h2>
+          <p class="ai-partner-body">Every Formaut plan includes enough AI to build a complete, professional website and keep it running — no other subscriptions required. You get a fully operating site, a working admin panel, and an agent that remembers your business. That's the whole product.</p>
+          <p class="ai-partner-body">If you already use Claude or ChatGPT for your business — great. You can use them to workshop ideas, draft copy, and figure out exactly what you want before you bring it to Formaut. That keeps your Formaut AI focused on building, which means faster results and more headroom for bigger projects.</p>
+          <p class="ai-partner-body">Think of it like having a contractor. You can show up with rough ideas and they'll figure it out — or you can show up with a clear brief and they'll work faster. Either way, the house gets built.</p>
+        </div>
+        <div class="ai-flow reveal">
+          <div class="flow-step">
+            <div class="flow-tool">Optional — if you already use Claude or ChatGPT</div>
+            <div class="flow-desc">Workshop your ideas. Draft your copy. Figure out exactly what you want your site to say and do. Then bring that brief to Formaut — it goes straight to building, not discovery.</div>
+            <div class="flow-arrow">↓</div>
+          </div>
+          <div class="flow-step flow-step-formaut">
+            <div class="flow-tool-formaut">Formaut — always included</div>
+            <div class="flow-desc-formaut">Takes your brief — or figures it out with you from scratch. Builds the site. Deploys it live. Maintains it over time. Hands you the keys. Complete on its own.</div>
+          </div>
+          <div class="flow-export">
+            <div class="flow-export-icon">📤</div>
+            <div>
+              <div class="flow-export-title">Export your context anytime</div>
+              <div class="flow-export-body">Download your Formaut history — business details, preferences, site decisions — as a formatted prompt you can paste into any AI tool to continue working. Your knowledge stays portable, always.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="future-note reveal">
+        <div class="future-icon">🔭</div>
+        <div>
+          <div class="future-title">On the roadmap — Claude as your Formaut interface</div>
+          <div class="future-body">Anthropic is building toward letting Claude.ai connect directly to external tools and services. When that opens up for consumer subscriptions, Formaut will be ready — meaning you'll be able to use the Claude app on your phone or desktop to build and maintain your site directly through your existing subscription. <strong>Your phone becomes the interface. Formaut's infrastructure does the building.</strong> We'll ship it the moment it's possible.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OWNERSHIP -->
+  <section class="ownership section">
+    <div class="wrap">
+      <div class="label reveal">Why it's different</div>
+      <h2 class="hero-headline reveal" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left; max-width: 700px;">
+        You don't rent your site.<br><em>You own it.</em>
+      </h2>
+      <div class="own-grid reveal">
+        <div class="own-card">
+          <div class="own-icon">⚙️</div>
+          <div class="own-title">Your GitHub</div>
+          <div class="own-body">Your site's code lives in your own GitHub repository. Every file, every change, every deploy — yours. Take it to any developer, any host, any time.</div>
+        </div>
+        <div class="own-card">
+          <div class="own-icon">🌐</div>
+          <div class="own-title">Your Cloudflare</div>
+          <div class="own-body">Hosting, DNS, SSL, CDN — all under your own Cloudflare account. No bandwidth limits. No surprise bills. No middleman between you and your site.</div>
+        </div>
+        <div class="own-card">
+          <div class="own-icon">🗄️</div>
+          <div class="own-title">Your Database</div>
+          <div class="own-body">Your content, your customer data, your site history — stored in your own Supabase account. Cancel Formaut and your data stays exactly where it is.</div>
+        </div>
+        <div class="own-card">
+          <div class="own-icon">💳</div>
+          <div class="own-title">Your Stripe</div>
+          <div class="own-body">Want to take payments? Connect your own Stripe account. Money goes directly to your bank. We never touch it, hold it, or take a cut of your sales.</div>
+        </div>
+        <div class="own-card">
+          <div class="own-icon">👕</div>
+          <div class="own-title">Your Printify</div>
+          <div class="own-body">Selling merch? Connect your Printify account and Formaut wires up a full store. Your products, your customers, your fulfillment relationship.</div>
+        </div>
+        <div class="own-card">
+          <div class="own-icon">🔑</div>
+          <div class="own-title">Walk Away Anytime</div>
+          <div class="own-body">Cancel Formaut and your site keeps running. Forever. On your accounts, with your credentials. We're the contractor who builds in your house — not the landlord.</div>
+        </div>
+      </div>
+      <div class="domain-callout reveal">
+        <div class="domain-callout-icon">🏠</div>
+        <div>
+          <h3>Your domain is yours — and that's the point.</h3>
+          <p>Formaut doesn't include a domain because it <em>shouldn't</em> be ours to give you. <strong>For about $10 a year</strong> you register your own address on the internet — in your name, paid by you, controlled entirely by you. We'll walk you through getting one in minutes. That $10 is the most important business investment you'll make this year. It's the difference between renting a storefront and owning the building.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADMIN PANEL -->
+  <section class="admin-proof section">
+    <div class="wrap">
+      <div class="admin-inner reveal">
+        <div class="admin-text">
+          <div class="label">Built into every site</div>
+          <h2 class="hero-headline" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+            Your site comes with<br>its own control panel.<br><em>No subscription required.</em>
+          </h2>
+          <p class="admin-body">Every site Formaut builds includes a password-protected admin panel — yours to keep, forever, even after you cancel. Update your hours, swap your photos, change your menu, post a special. No code. No developer. No monthly fee.</p>
+          <p class="admin-body">This wasn't an afterthought. It's the whole point. Formaut is designed so that the day you stop paying us, you don't lose the ability to run your own business online. You just lose access to the AI. Everything else stays exactly as it is.</p>
+          <div class="admin-callout">
+            <span class="admin-callout-icon">💡</span>
+            <span>Most website platforms charge you every month partly because they <em>know</em> you can't leave — your content is locked inside their system. Formaut is built the opposite way. We want you to stay because the product is worth it, not because you're trapped.</span>
+          </div>
+        </div>
+        <div class="admin-panel-demo">
+          <div class="panel-header">
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
+              <div class="chat-dot"></div>
+              <div class="chat-dot"></div>
+              <div class="chat-dot"></div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <div style="font-size:0.7rem; font-family:var(--f-mono); letter-spacing:0.08em; text-transform:uppercase; color:var(--smoke); margin-bottom:0.2rem;">Admin Panel</div>
+                <div style="font-size:1rem; font-weight:600; color:var(--paper); letter-spacing:-0.01em;">Maria's Cleaning Co</div>
+              </div>
+              <div style="font-family:var(--f-mono); font-size:0.6rem; color:var(--ember); background:rgba(200,90,30,0.1); border:1px solid rgba(200,90,30,0.25); padding:0.2rem 0.6rem; letter-spacing:0.05em; text-transform:uppercase;">Live</div>
+            </div>
+          </div>
+          <div class="panel-body">
+
+            <!-- Card: Site Content -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <div class="panel-section-label">Site Content</div>
+                <div class="panel-card-count">3 fields</div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Business name</div>
+                <div class="panel-field-value">Maria's Cleaning Co</div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Tagline</div>
+                <div class="panel-field-value">Residential &amp; Commercial · Austin, TX</div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Phone</div>
+                <div class="panel-field-value editable">512-555-0184 <span class="edit-hint">edit</span></div>
+              </div>
+            </div>
+
+            <!-- Card: Hours -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <div class="panel-section-label">Hours</div>
+                <div class="panel-card-count">3 fields</div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Monday – Friday</div>
+                <div class="panel-field-value editable">8:00am – 6:00pm <span class="edit-hint">edit</span></div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Saturday</div>
+                <div class="panel-field-value editable">9:00am – 3:00pm <span class="edit-hint">edit</span></div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Sunday</div>
+                <div class="panel-field-value editable">Closed <span class="edit-hint">edit</span></div>
+              </div>
+            </div>
+
+            <!-- Card: Today's Special -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <div class="panel-section-label">Today's Special</div>
+                <div class="panel-card-count">1 field</div>
+              </div>
+              <div class="panel-field">
+                <div class="panel-field-label">Announcement</div>
+                <div class="panel-field-value editable">10% off first-time residential bookings <span class="edit-hint">edit</span></div>
+              </div>
+            </div>
+
+            <div class="panel-save">
+              <button class="save-btn">Save changes</button>
+              <div class="save-note">Changes go live instantly</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKS FOR -->
+  <section id="works" class="works section">
+    <div class="wrap">
+      <div class="works-intro reveal">
+        <div class="label">Works out of the box</div>
+        <h2 class="hero-headline" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+          If your business is here,<br><em>your site is ready.</em>
+        </h2>
+        <p>These business types work completely with just three free accounts — GitHub, Cloudflare, and Supabase. No payment setup required. Just a domain and a conversation.</p>
+      </div>
+      <div class="works-grid reveal">
+        <div class="works-item"><span class="works-emoji">🍽️</span><span class="works-name">Restaurant / Diner</span></div>
+        <div class="works-item"><span class="works-emoji">☕</span><span class="works-name">Cafe / Coffee Shop</span></div>
+        <div class="works-item"><span class="works-emoji">🍺</span><span class="works-name">Brewery / Bar</span></div>
+        <div class="works-item"><span class="works-emoji">🚐</span><span class="works-name">Food Truck</span></div>
+        <div class="works-item"><span class="works-emoji">🎂</span><span class="works-name">Bakery / Catering</span></div>
+        <div class="works-item"><span class="works-emoji">🔧</span><span class="works-name">Plumber / Electrician</span></div>
+        <div class="works-item"><span class="works-emoji">🌿</span><span class="works-name">Landscaper / Lawn Care</span></div>
+        <div class="works-item"><span class="works-emoji">🧹</span><span class="works-name">Cleaning Service</span></div>
+        <div class="works-item"><span class="works-emoji">🏠</span><span class="works-name">Contractor / Handyman</span></div>
+        <div class="works-item"><span class="works-emoji">🎵</span><span class="works-name">Band / Musician</span></div>
+        <div class="works-item"><span class="works-emoji">🎧</span><span class="works-name">DJ / Producer</span></div>
+        <div class="works-item"><span class="works-emoji">📸</span><span class="works-name">Photographer</span></div>
+        <div class="works-item"><span class="works-emoji">🎬</span><span class="works-name">Videographer</span></div>
+        <div class="works-item"><span class="works-emoji">✂️</span><span class="works-name">Hair Salon / Barber</span></div>
+        <div class="works-item"><span class="works-emoji">💆</span><span class="works-name">Massage / Spa</span></div>
+        <div class="works-item"><span class="works-emoji">🏋️</span><span class="works-name">Personal Trainer</span></div>
+        <div class="works-item"><span class="works-emoji">🧘</span><span class="works-name">Yoga / Pilates Studio</span></div>
+        <div class="works-item"><span class="works-emoji">🐾</span><span class="works-name">Pet Groomer</span></div>
+        <div class="works-item"><span class="works-emoji">🏡</span><span class="works-name">Real Estate Agent</span></div>
+        <div class="works-item"><span class="works-emoji">⚖️</span><span class="works-name">Consultant / Freelancer</span></div>
+        <div class="works-item"><span class="works-emoji">🎨</span><span class="works-name">Artist / Illustrator</span></div>
+        <div class="works-item"><span class="works-emoji">🖋️</span><span class="works-name">Tattoo Artist</span></div>
+        <div class="works-item"><span class="works-emoji">🚗</span><span class="works-name">Auto Detailer</span></div>
+        <div class="works-item"><span class="works-emoji">⛪</span><span class="works-name">Church / Nonprofit</span></div>
+        <div class="works-item"><span class="works-emoji">🍕</span><span class="works-name">Food / Catering Co</span></div>
+      </div>
+      <div class="works-plus reveal">
+        <span class="pill">+ Add Stripe to take payments</span>
+        <span class="pill">+ Add Printify to sell merch</span>
+        <span class="pill pill-highlight">Available on all plans</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="how section">
+    <div class="wrap">
+      <div class="label reveal">The process</div>
+      <h2 class="hero-headline reveal" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+        From conversation<br><em>to live site.</em>
+      </h2>
+      <div class="how-compare reveal">
+        <div class="how-compare-item how-compare-them">
+          <div class="how-compare-label">Squarespace / Wix</div>
+          <div class="how-compare-time">4–8 hours</div>
+          <div class="how-compare-detail">You do all the work. Template looks like a template. Site belongs to them.</div>
+        </div>
+        <div class="how-compare-item how-compare-them">
+          <div class="how-compare-label">Hiring a developer</div>
+          <div class="how-compare-time">Weeks</div>
+          <div class="how-compare-detail">Expensive. Slow. You depend on them for every change.</div>
+        </div>
+        <div class="how-compare-item how-compare-us">
+          <div class="how-compare-label">Formaut</div>
+          <div class="how-compare-time">One conversation.</div>
+          <div class="how-compare-detail">Site is live. Everything is yours. Faster than any alternative — and when it's done, you own it.</div>
+        </div>
+      </div>
+      <div class="how-steps">
+        <div class="how-step reveal">
+          <div class="step-num">1</div>
+          <div class="step-title">Connect your accounts</div>
+          <div class="step-body">Three free accounts — GitHub, Cloudflare, Supabase. We walk you through each one. Takes about ten minutes total. Everything goes into your name, not ours.</div>
+        </div>
+        <div class="how-step reveal">
+          <div class="step-num">2</div>
+          <div class="step-title">Tell Formaut about your business</div>
+          <div class="step-body">Have a conversation. Your name, what you do, where you are, how people should reach you. Formaut asks what it needs and starts building immediately.</div>
+        </div>
+        <div class="how-step reveal">
+          <div class="step-num">3</div>
+          <div class="step-title">Your site goes live</div>
+          <div class="step-body">Deployed to your domain, running on your accounts, fully yours. Come back whenever something needs updating. Formaut remembers your business and picks up where you left off.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIPS -->
+  <section class="tips section">
+    <div class="wrap tips-inner">
+      <div class="reveal">
+        <div class="label">Getting the most out of it</div>
+        <h2 class="tips-headline">Work with Formaut<br>like a specialist,<br>not a search engine.</h2>
+        <p class="tips-sub">The clients who get the best results come in with a specific task. Formaut is your web team — use it for web work.</p>
+      </div>
+      <div class="tips-list">
+        <div class="tip reveal">
+          <div class="tip-icon">✅</div>
+          <div>
+            <div class="tip-title">Come with a clear task</div>
+            <div class="tip-body">"Add a booking form to my contact page." "Change my hours for the holidays." "I want to add a specials section." Specific requests get specific results — fast.</div>
+          </div>
+        </div>
+        <div class="tip reveal">
+          <div class="tip-icon">🔍</div>
+          <div>
+            <div class="tip-title">Use Google or ChatGPT for general questions</div>
+            <div class="tip-body">Questions about your industry, pricing strategy, or how Facebook ads work aren't what Formaut is for. Save your AI time for the work only Formaut can do: building and maintaining your actual site.</div>
+          </div>
+        </div>
+        <div class="tip reveal">
+          <div class="tip-icon">💬</div>
+          <div>
+            <div class="tip-title">Shorter conversations, better results</div>
+            <div class="tip-body">One task per conversation works better than trying to do everything at once. Formaut remembers your business between sessions, so you can always pick up exactly where you left off.</div>
+          </div>
+        </div>
+        <div class="tip reveal">
+          <div class="tip-icon">📋</div>
+          <div>
+            <div class="tip-title">The agent will offer you a shortcut</div>
+            <div class="tip-body">Early in your first conversation, Formaut will offer to send you a quick intake form. Business name, location, phone, pages you need — simple stuff that doesn't require a conversation to figure out. Fill it in and Formaut goes straight to building. Totally optional — you can always just keep talking.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="pricing section">
+    <div class="wrap">
+      <div class="pricing-intro reveal">
+        <div class="label">Simple pricing</div>
+        <h2 class="hero-headline" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+          One price.<br><em>Everything included.</em>
+        </h2>
+        <p>Unlimited sites. All integrations. Cancel anytime and keep everything you built.</p>
+      </div>
+      <div class="pricing-grid reveal">
+        <div class="price-card">
+          <div class="price-tier">Standard</div>
+          <div class="price-amount"><sup>$</sup>50</div>
+          <div class="price-period">per month · cancel anytime</div>
+          <ul class="price-features">
+            <li><strong>Unlimited sites</strong> — build as many as you need</li>
+            <li><strong>Built for real business use</strong> — handles everything an active site needs</li>
+            <li>Stripe payments — connect your account, keep all revenue</li>
+            <li>Printify merch store — your products, your fulfillment</li>
+            <li>Custom domain support — we help you set it up</li>
+            <li>Your GitHub, Cloudflare, Supabase — always yours</li>
+            <li>Site stays live if you cancel — forever</li>
+          </ul>
+          <a href="#start" class="price-cta cta-secondary">Get started</a>
+        </div>
+        <div class="price-card featured">
+          <div class="price-badge">Most popular</div>
+          <div class="price-tier">Pro</div>
+          <div class="price-amount"><sup>$</sup>100</div>
+          <div class="price-period">per month · cancel anytime</div>
+          <ul class="price-features">
+            <li><strong>Everything in Standard</strong></li>
+            <li><strong>3× the capacity</strong> — for power users, busy seasons, multiple sites</li>
+            <li>Lower overflow rate when you go heavy</li>
+            <li>Priority when you need something handled fast</li>
+            <li>Best for businesses that update their site frequently or manage multiple locations</li>
+          </ul>
+          <a href="#start" class="price-cta cta-primary">Get started</a>
+        </div>
+      </div>
+      <div class="overflow-note reveal">
+        <strong>Transparent overflow.</strong> For larger projects — a full redesign, adding a store, a heavy build month — Formaut will let you know and give you the option to continue for a small additional cost, close to what it costs us. No automatic charges. No surprises. It feels like hiring extra help for the day, not hitting a wall.
+      </div>
+    </div>
+  </section>
+
+  <!-- STAYING -->
+  <section id="staying" class="staying section">
+    <div class="wrap">
+      <div class="label reveal">What staying looks like</div>
+      <h2 class="hero-headline reveal" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left; max-width:700px;">
+        Cancel anytime and keep everything.<br><em>Stay and get something more.</em>
+      </h2>
+      <p class="staying-intro reveal">When you cancel Formaut you walk away with your site, your admin panel, and everything in your accounts. That's a genuinely good deal and we mean it. But here's what you walk away from.</p>
+
+      <div class="staying-timeline reveal">
+        <div class="timeline-item">
+          <div class="timeline-marker">Month 1</div>
+          <div class="timeline-content">
+            <div class="timeline-title">Your site is built and live.</div>
+            <div class="timeline-body">One conversation. Deployed to your domain. Admin panel working. Everything in your accounts. You could cancel today and come out ahead of what a developer would have charged.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-marker">Month 2–3</div>
+          <div class="timeline-content">
+            <div class="timeline-title">Your agent already knows your business.</div>
+            <div class="timeline-body">Formaut has your history, your preferences, your site decisions. Updates take minutes instead of a full conversation. The agent catches a Cloudflare configuration that needed updating — before it became a problem. Suggests a booking form based on how visitors are using your contact page.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-marker">Month 4–6</div>
+          <div class="timeline-content">
+            <div class="timeline-title">Security monitoring runs quietly in the background.</div>
+            <div class="timeline-body">Formaut watches your connected accounts — Cloudflare, Supabase, Stripe — for anomalies, expired configs, anything that could expose your data or your customers'. Problems surfaced before you know they exist. You run your business. The agent watches the infrastructure.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-marker">Month 6–12</div>
+          <div class="timeline-content">
+            <div class="timeline-title">Analytics and suggestions that actually make sense.</div>
+            <div class="timeline-body">Formaut pulls data from your connected APIs — traffic, behavior, conversion — and interprets it with full knowledge of your stack. Not generic advice. Specific suggestions from an agent that knows your GitHub, your Supabase, your Stripe history, your site's entire evolution. A new integration ships. Your agent adds it and explains what it does.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-marker">Year 2+</div>
+          <div class="timeline-content">
+            <div class="timeline-title">The agent gets better as Claude gets better.</div>
+            <div class="timeline-body">Every Claude improvement flows into Formaut automatically. The agent that built your site in year one is meaningfully smarter in year two. New API integrations become available as Formaut grows — added to your site without you having to ask. Your web presence compounds quietly while you run your business.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="staying-comparison reveal">
+        <div class="compare-col">
+          <div class="compare-header compare-leave">If you cancel after month 1</div>
+          <div class="compare-item good">✓ Your site keeps running forever</div>
+          <div class="compare-item good">✓ Admin panel stays working</div>
+          <div class="compare-item good">✓ All your accounts intact</div>
+          <div class="compare-item good">✓ Code in your GitHub</div>
+          <div class="compare-item gone">✗ No security monitoring</div>
+          <div class="compare-item gone">✗ No proactive problem detection</div>
+          <div class="compare-item gone">✗ No analytics interpretation</div>
+          <div class="compare-item gone">✗ No new integrations</div>
+          <div class="compare-item gone">✗ No agent that knows your history</div>
+          <div class="compare-item gone">✗ No Claude improvements flowing in</div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-header compare-stay">If you stay</div>
+          <div class="compare-item good">✓ Everything above</div>
+          <div class="compare-item good">✓ 24/7 security monitoring</div>
+          <div class="compare-item good">✓ Problems caught before you notice</div>
+          <div class="compare-item good">✓ Analytics from your own data</div>
+          <div class="compare-item good">✓ Suggestions specific to your stack</div>
+          <div class="compare-item good">✓ New integrations as they ship</div>
+          <div class="compare-item good">✓ Agent that knows your full history</div>
+          <div class="compare-item good">✓ Smarter every time Claude improves</div>
+          <div class="compare-item good">✓ Optional — only when you need it</div>
+        </div>
+      </div>
+
+      <div class="staying-callout reveal">
+        <div class="staying-callout-icon">💡</div>
+        <div>
+          <h3>The honest comparison</h3>
+          <p>What's worse — paying $16 or $30 a month forever for a platform that owns your site and locks you out the moment you stop paying? Or paying $50 once to build something completely yours, then choosing month by month whether the agent watching over it is worth it to you? Most months it will be. Some months it won't. Either way you own the site.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="about section">
+    <div class="wrap">
+      <div class="about-inner">
+        <div class="about-text reveal">
+          <div class="label">Why this exists</div>
+          <h2 class="hero-headline" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+            Built by someone who<br>needed it and couldn't<br><em>find it anywhere.</em>
+          </h2>
+        </div>
+        <div class="about-body reveal">
+          <p>I built Formaut because I was building a website and the whole time I kept thinking: <em>there has to be a better way.</em> Developers are expensive and slow. Platforms lock you in. Templates look like templates. And none of them give you anything you actually own when you're done paying.</p>
+
+          <p>But the deeper frustration was different. I had AI. I could talk through ideas, get code, get copy, get strategy. What I couldn't get was an agent that stayed in the room until the thing was actually done. One that was connected to my real tools — my hosting, my database, my domain — and could do the wiring, not just hand me instructions and wish me luck.</p>
+
+          <p>I didn't just want help thinking. I wanted help doing.</p>
+
+          <p>And underneath all of it was something that bothered me more the longer I thought about it: every subscription I was paying for — the website platform, the booking tool, the payment processor — was another landlord. Another company that owned a piece of my online presence and could change the terms, raise the price, or lock me out whenever they felt like it.</p>
+
+          <p>Formaut is the answer to all three of those frustrations. An agent connected to infrastructure you own. One that finishes the job instead of handing you instructions. One that costs you $50 to build something worth hundreds — and then gets out of the way unless you need it.</p>
+
+          <p>I built this because it's a tool I wished existed. Every design decision — the accounts in your name, the site that keeps running when you cancel, the admin panel that's yours forever — comes from that same place. I wanted independence from platforms that profit from your dependency. Formaut is what that looks like.</p>
+
+          <div class="about-sig">
+            <div class="about-sig-name">Gabe Nelson</div>
+            <div class="about-sig-title">Founder, Dread Pirate Studio LLC</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="faq section">
+    <div class="wrap">
+      <div class="label reveal">Honest answers</div>
+      <h2 class="hero-headline reveal" style="font-size: clamp(2rem, 4vw, 3.25rem); opacity:1; animation:none; text-align:left;">
+        The questions<br><em>worth asking.</em>
+      </h2>
+      <div class="faq-grid reveal">
+        <div class="faq-item">
+          <div class="faq-q">What happens if I cancel?</div>
+          <div class="faq-a">Your site keeps running. <strong>Forever.</strong> It's on your Cloudflare account, your GitHub repo, your Supabase database. We're not in the loop. You just stop paying us and everything continues exactly as it was.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Do I need to know anything about websites?</div>
+          <div class="faq-a">Nothing. If you can describe your business in plain English, Formaut can build the site. The technical setup takes about ten minutes and we walk you through every step with screenshots.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Why do I need to buy a domain separately?</div>
+          <div class="faq-a">Because it should belong to you, not us. <strong>About $10 a year</strong> through Cloudflare Registrar gets you an address on the internet that's registered in your name. We help you get it and connect it in minutes. That $10 is one of the best business investments you'll make.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What if I come back after canceling?</div>
+          <div class="faq-a">Reconnect your accounts and Formaut picks up exactly where you left off. Your conversation history, site preferences, and business context are stored in your own Supabase — they never leave.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What is Claude and why does it power Formaut?</div>
+          <div class="faq-a">Claude is an AI built by Anthropic — the same company behind some of the most capable AI systems in the world. Formaut uses Claude because it's exceptional at understanding plain language requests and translating them into working, deployed websites. <strong>We're transparent about this</strong> because we think you should know what's powering your tools.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Can Formaut build anything?</div>
+          <div class="faq-a">Most things a small business needs — yes. There are some complex custom features that go beyond what Formaut handles automatically. When that happens, we tell you clearly and log it as a feature request. <strong>We never pretend we can do something we can't.</strong></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Is my data safe?</div>
+          <div class="faq-a">Your data lives in your own Supabase account — not ours. We access it to help build and maintain your site, but we don't own it, can't sell it, and it doesn't disappear if something happens to us.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">I already pay for Claude or ChatGPT. Is Formaut redundant?</div>
+          <div class="faq-a">Not at all — and Formaut is complete on its own without them. Every plan gives you everything needed for a fully operating website. <strong>If you already use other AI tools</strong>, you can use them to workshop ideas before bringing them to Formaut — that keeps your AI focused on building and can yield richer results. But Formaut alone is never lacking.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Can I export my data to use with another AI tool?</div>
+          <div class="faq-a">Yes. You can download your Formaut context — business details, site decisions, preferences, conversation history — as a formatted file you can paste into Claude, ChatGPT, or any other AI. <strong>Your knowledge is portable.</strong> We never lock it in.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Will I be able to use my Claude subscription with Formaut?</div>
+          <div class="faq-a">That's exactly where we're headed. Anthropic is building toward letting Claude.ai connect directly to external tools and services. When that opens up, <strong>you'll be able to use the Claude app on your phone or desktop to build and maintain your site through Formaut</strong> — your existing subscription as the interface, Formaut's infrastructure doing the building. We'll ship it the moment it's available.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What's the intake form the agent offers?</div>
+          <div class="faq-a">Early in your first conversation, Formaut will offer to send you a short form — business name, location, phone, pages you need. It's the information that doesn't really need a conversation to figure out. <strong>Fill it in and Formaut goes straight to building.</strong> Ignore it and just keep talking — either way your site gets built.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">How long does it take to get my site live?</div>
+          <div class="faq-a">Most sites go live in a single conversation — usually under an hour. The account setup takes about ten minutes the first time. After that, one conversation with Formaut and your site is deployed to your domain. <strong>Faster than any alternative</strong>, and when it's done, you own it outright.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER CTA -->
+  <section id="start" class="footer-cta">
+    <div class="wrap">
+      <h2>Your site is waiting.<br>Start the conversation.</h2>
+      <p>Ten minutes to connect your accounts. One conversation to build your site. Yours to keep forever.</p>
+      <a href="#" class="btn-primary" style="font-size: 1.1rem; padding: 1.1rem 2.75rem;">Get started — $50/mo</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Form<span>aut</span></div>
+    <div class="footer-meta">© 2026 Dread Pirate Studio LLC · formaut.com</div>
+    <div class="footer-powered">Powered by <strong>Claude</strong> · Built by Formaut</div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    reveals.forEach(el => observer.observe(el));
+
+    // ── Demo animation — typewriter style ─────────────────────────────────────
+    const DEMO_SCRIPT = [
+      { role: 'user', text: 'I need a website for my cleaning business. We do residential and commercial, based in Austin. Phone is 512-555-0184.' },
+      { role: 'bot',  text: "On it. Building your home page with a services section and your number above the fold — where clients expect it. What's the business name?" },
+      { role: 'user', text: "Maria's Cleaning Co. Professional but warm — not corporate." },
+      { role: 'deploy', text: '▸ Deploying to mariacleaningco.com — live in ~30 seconds' },
+      { role: 'bot',  text: 'Done. Your site is live at mariacleaningco.com. Warm tones, clear headline, your number prominent. Want to add a booking form or photo gallery?' },
+    ];
+
+    let demoStarted = false;
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    async function typeIntoInput(text) {
+      const inputEl  = document.getElementById('demo-input-text');
+      const inputBox = document.getElementById('demo-input-box');
+      const sendBtn  = document.getElementById('demo-send-btn');
+      if (!inputEl || !inputBox || !sendBtn) return;
+      inputEl.innerHTML = '';
+      inputBox.classList.add('active');
+      for (let i = 0; i < text.length; i++) {
+        inputEl.innerHTML = text.slice(0, i + 1) + '<span class="demo-cursor"></span>';
+        await sleep(26 + Math.random() * 22);
+      }
+      await sleep(380);
+      sendBtn.classList.add('sending');
+      await sleep(160);
+      sendBtn.classList.remove('sending');
+      await sleep(100);
+      inputEl.innerHTML = '';
+      inputBox.classList.remove('active');
+    }
+
+    async function addBotMessage(text) {
+      const area = document.getElementById('demo-msg-area');
+      if (!area) return;
+      const typingRow = document.createElement('div');
+      typingRow.className = 'demo-bubble-row';
+      typingRow.innerHTML = '<div class="demo-avatar bot">F</div><div class="demo-bubble bot"><div class="demo-typing"><span></span><span></span><span></span></div></div>';
+      area.appendChild(typingRow);
+      await sleep(50);
+      typingRow.classList.add('show');
+      area.scrollTop = area.scrollHeight;
+      await sleep(1200 + text.length * 10);
+      typingRow.querySelector('.demo-bubble').textContent = text;
+      area.scrollTop = area.scrollHeight;
+    }
+
+    async function addUserMessage(text) {
+      const area = document.getElementById('demo-msg-area');
+      if (!area) return;
+      const row = document.createElement('div');
+      row.className = 'demo-bubble-row';
+      row.innerHTML = '<div class="demo-avatar user">ME</div><div class="demo-bubble user">' + text + '</div>';
+      area.appendChild(row);
+      await sleep(50);
+      row.classList.add('show');
+      area.scrollTop = area.scrollHeight;
+    }
+
+    async function showDeployLine(text) {
+      const area  = document.getElementById('demo-msg-area');
+      const urlEl = document.getElementById('demo-url');
+      if (!area) return;
+      const el = document.createElement('div');
+      el.className = 'demo-deploy-line';
+      el.textContent = text;
+      area.appendChild(el);
+      await sleep(50);
+      el.classList.add('show');
+      if (urlEl) urlEl.innerHTML = '<span class="url-live">mariacleaningco.com</span>';
+      area.scrollTop = area.scrollHeight;
+    }
+
+    async function runDemoAnimation() {
+      if (demoStarted) return;
+      demoStarted = true;
+      await sleep(600);
+      for (const step of DEMO_SCRIPT) {
+        if (step.role === 'user') {
+          await typeIntoInput(step.text);
+          await sleep(200);
+          await addUserMessage(step.text);
+          await sleep(300);
+        } else if (step.role === 'bot') {
+          await addBotMessage(step.text);
+          await sleep(600);
+        } else if (step.role === 'deploy') {
+          await showDeployLine(step.text);
+          await sleep(1000);
+          const ph = document.getElementById('demo-placeholder');
+          const ms = document.getElementById('mock-site');
+          if (ph) ph.style.opacity = '0';
+          await sleep(400);
+          if (ph) ph.style.display = 'none';
+          if (ms) { ms.style.display = 'block'; await sleep(50); ms.classList.add('visible'); }
+          await sleep(400);
+        }
+      }
+    }
+
+    const demoTrigger = document.querySelector('.demo-split');
+    if (demoTrigger) {
+      const demoObs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) { runDemoAnimation(); demoObs.disconnect(); }
+      }, { threshold: 0.25 });
+      demoObs.observe(demoTrigger);
+    }
+
+    let previewUsed    = false;
+    let lastDescription = '';
+    let awaitingName   = false;
+
+    async function buildPreview(businessName = null) {
+      const input   = document.getElementById('preview-input');
+      const btn     = document.getElementById('preview-btn');
+      const btnText = btn.querySelector('.preview-btn-text');
+      const btnLoad = btn.querySelector('.preview-btn-loading');
+      const errEl   = document.getElementById('preview-error');
+      const result  = document.getElementById('preview-result');
+      const frame   = document.getElementById('preview-frame');
+      const hint    = document.querySelector('.preview-hint');
+
+      const description = lastDescription || input.value.trim();
+
+      if (!description || description.length < 10) {
+        showError('Tell us a bit more — a sentence is enough.');
+        return;
+      }
+
+      // One preview per session — if used, only allow name update
+      if (previewUsed && !businessName) {
+        result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      // Loading state
+      btn.disabled          = false;
+      btnText.style.display = 'none';
+      btnLoad.style.display = 'inline';
+      errEl.style.display   = 'none';
+      btn.disabled          = true;
+
+      try {
+        const payload = { description };
+        if (businessName) payload.business_name = businessName;
+
+        const res  = await fetch('/api/preview', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.html) {
+          throw new Error(data.error || 'Preview generation failed.');
+        }
+
+        // Render into iframe
+        const encoded = 'data:text/html;charset=utf-8,' + encodeURIComponent(data.html);
+        frame.src = encoded;
+
+        result.style.display = 'block';
+        lastDescription      = description;
+        previewUsed          = true;
+        awaitingName         = false;
+
+        // Lock the input so it can't be submitted again
+        input.disabled        = true;
+        input.style.opacity   = '0.4';
+        btn.disabled          = true;
+        btn.style.opacity     = '0.4';
+        btn.onclick           = null;
+
+        // Smooth scroll
+        setTimeout(() => result.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+
+        // Only show name follow-up if the API didn't find a name in the description
+        // data.name will be an inferred generic name if none was provided
+        // We check if the returned name looks like it was inferred vs extracted
+        if (!businessName) {
+          const returnedName = (data.name || '').toLowerCase();
+          const descLower = description.toLowerCase();
+          // If the returned name appears in the original description, they gave a name — don't ask
+          const nameFoundInDesc = returnedName.split(' ').some(word =>
+            word.length > 3 && descLower.includes(word)
+          );
+          if (!nameFoundInDesc) {
+            setTimeout(() => showNameFollowup(), 1500);
+          }
+        }
+
+        hint.textContent = 'Your preview is ready. Want to own it?';
+
+      } catch (err) {
+        showError(err.message || 'Something went wrong. Please try again.');
+      } finally {
+        btn.disabled          = false;
+        btnText.style.display = 'inline';
+        btnLoad.style.display = 'none';
+      }
+    }
+
+    function showNameFollowup() {
+      const followup = document.getElementById('name-followup');
+      if (followup) {
+        followup.style.display = 'flex';
+        awaitingName = true;
+      }
+    }
+
+    function submitName() {
+      const nameInput = document.getElementById('name-input');
+      const name = nameInput.value.trim();
+      if (!name) return;
+      document.getElementById('name-followup').style.display = 'none';
+      buildPreview(name);
+    }
+
+    function showError(msg) {
+      const errEl = document.getElementById('preview-error');
+      errEl.textContent   = msg;
+      errEl.style.display = 'block';
+    }
+
+    // Enter key on main input — Enter submits, Shift+Enter adds newline
+    const previewInput = document.getElementById('preview-input');
+
+    previewInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        buildPreview();
+      }
+    });
+
+    // Auto-expand textarea as user types
+    previewInput.addEventListener('input', () => {
+      previewInput.style.height = 'auto';
+      previewInput.style.height = Math.min(previewInput.scrollHeight, 160) + 'px';
+    });
+  </script>
+</body>
+</html>

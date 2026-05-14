@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formaut — Connect Supabase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:       #0e0c0a;
+      --paper:     #f5f0e8;
+      --ember:     #c85a1e;
+      --ash:       #2a2520;
+      --smoke:     #4a4540;
+      --fog:       #8a837a;
+      --wire:      #2e2a26;
+      --green:     #4ade80;
+      --f-display: 'DM Sans', system-ui, sans-serif;
+      --f-body:    'DM Sans', system-ui, sans-serif;
+      --f-mono:    'DM Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--ink); color: var(--paper); font-family: var(--f-body); font-weight: 300; line-height: 1.6; min-height: 100dvh; }
+    ::selection { background: var(--ember); color: var(--paper); }
+    a { color: inherit; text-decoration: none; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: 1px solid var(--wire); }
+    .logo { font-family: var(--f-display); font-size: 1.15rem; font-weight: 900; letter-spacing: -0.02em; }
+    .logo span { color: var(--ember); }
+    .back-link { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fog); cursor: pointer; }
+    .back-link:hover { color: var(--paper); }
+    .page { max-width: 680px; margin: 0 auto; padding: 3.5rem 2rem 6rem; }
+    .guide-label { font-family: var(--f-mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ember); margin-bottom: 0.75rem; }
+    .guide-title { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 1rem; }
+    .guide-intro { color: var(--fog); font-size: 0.95rem; line-height: 1.7; margin-bottom: 3rem; }
+    .step { display: flex; gap: 1.5rem; margin-bottom: 2.5rem; }
+    .step-num { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: var(--ash); border: 1px solid var(--wire); display: flex; align-items: center; justify-content: center; font-family: var(--f-mono); font-size: 0.75rem; color: var(--fog); margin-top: 0.15rem; }
+    .step-content { flex: 1; }
+    .step-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.4rem; }
+    .step-desc { color: var(--fog); font-size: 0.9rem; line-height: 1.6; }
+    .step-desc strong { color: var(--paper); font-weight: 500; }
+    .step-screenshot { margin-top: 1rem; background: var(--ash); border: 1px solid var(--wire); border-radius: 6px; padding: 1.25rem 1.5rem; }
+    .step-screenshot-label { font-family: var(--f-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fog); margin-bottom: 0.5rem; }
+    .callout { background: rgba(200,90,30,0.06); border: 1px solid rgba(200,90,30,0.2); border-radius: 6px; padding: 1rem 1.25rem; margin-top: 1rem; font-size: 0.85rem; color: var(--fog); line-height: 1.6; }
+    .callout strong { color: var(--ember); font-weight: 500; }
+    .path { font-family: var(--f-mono); font-size: 0.78rem; background: var(--ash); border: 1px solid var(--wire); border-radius: 4px; padding: 0.15rem 0.5rem; color: var(--paper); }
+    .divider { height: 1px; background: var(--wire); margin: 3rem 0; }
+    .why-section { margin-top: 3rem; }
+    .why-title { font-family: var(--f-mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fog); margin-bottom: 1rem; }
+    .why-body { font-size: 0.9rem; color: var(--fog); line-height: 1.7; }
+    .why-body p { margin-bottom: 0.75rem; }
+    .done-banner { background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.2); border-radius: 8px; padding: 1.5rem; text-align: center; margin-top: 3rem; }
+    .done-banner-title { font-weight: 600; margin-bottom: 0.4rem; }
+    .done-banner-sub { font-size: 0.85rem; color: var(--fog); }
+    .done-btn { display: inline-block; margin-top: 1.25rem; background: var(--ember); color: var(--paper); font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.65rem 1.5rem; border-radius: 4px; cursor: pointer; border: none; }
+  </style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="logo">Form<span>aut</span></div>
+  <span class="back-link" onclick="history.back()">← Back to setup</span>
+</nav>
+
+<div class="page">
+
+  <div class="guide-label">Setup guide — Step 3 of 3</div>
+  <h1 class="guide-title">Connect your Supabase account</h1>
+  <p class="guide-intro">Supabase is your database — it stores your site's content, your admin preferences, and the session history that lets Formaut remember what was built and how. Like everything else, it's in your account. Formaut never stores your data on its own servers.</p>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-title">Create a Supabase account</div>
+      <div class="step-desc">Go to <strong>supabase.com</strong> and sign up. The free tier gives you one project with a 500MB database — more than enough for your site.<br><br>If you already have an account, skip to step 2.</div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-title">Find your Organization ID</div>
+      <div class="step-desc">Supabase organizes projects under organizations. Formaut needs your org ID to create your database project in the right place.<br><br>The easiest way to find it: look at the URL when you're in your Supabase dashboard.<br><br>
+        <span class="path">supabase.com/dashboard/org/<strong style="color:var(--ember);">[your-org-id]</strong>/general</span><br><br>
+        Copy the ID from the URL — it's the part between <code style="font-size:0.8em;">/org/</code> and <code style="font-size:0.8em;">/general</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-title">Generate a Management API token</div>
+      <div class="step-desc">This token lets Formaut create and configure your database project automatically — so you don't have to set it up manually.<br><br>
+        <span class="path">supabase.com/dashboard/account/tokens → Generate new token</span>
+      </div>
+      <div class="step-screenshot">
+        <div class="step-screenshot-label">What to fill in</div>
+        <div style="font-size:0.85rem; color: var(--fog); line-height:2;">
+          <strong style="color:var(--paper);">Token name:</strong> Formaut Platform<br>
+          <strong style="color:var(--paper);">Expiry:</strong> No expiry<br>
+          <strong style="color:var(--paper);">Permissions:</strong> Leave as default (all management operations)
+        </div>
+      </div>
+      <div class="callout"><strong>Important:</strong> Copy the token immediately — Supabase only shows it once. If you close the page without copying it, you'll need to delete it and generate a new one.</div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-title">Paste both values into Formaut</div>
+      <div class="step-desc">Back on your setup page, paste:<br><br>
+        1. Your <strong>Organization ID</strong> into the org ID field<br>
+        2. Your <strong>Management API token</strong> into the token field<br><br>
+        Formaut will use these to create your database automatically — you won't need to do anything else in Supabase.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="why-section">
+    <div class="why-title">Why Supabase?</div>
+    <div class="why-body">
+      <p>Supabase is a Postgres database with a good API layer on top. Postgres is the most reliable open-source database in the world — it's been around for 35 years and runs a significant portion of the internet.</p>
+      <p>We looked at Firebase and PlanetScale. Firebase is proprietary — your data lives in Google's format. PlanetScale moved away from a free tier. Supabase is open source, has a genuinely useful free tier, and your database is standard Postgres — any developer in the world can work with it if you ever need one.</p>
+      <p>Your content, your hours, your menu, your images — all of it is in a database that you own and can export at any time.</p>
+    </div>
+  </div>
+
+  <div class="done-banner">
+    <div class="done-banner-title">Got your org ID and management token?</div>
+    <div class="done-banner-sub">This is the last step — head back to finish setup.</div>
+    <button class="done-btn" onclick="history.back()">Back to setup →</button>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+name = "forma-mcp-server"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# All secrets are set via `wrangler secret put` — never hardcoded here.
+#
+# Required secrets:
+#   MCP_API_KEY                — bearer token for claude.ai MCP auth
+#                                generate with: openssl rand -hex 32
+#                                enter this in claude.ai Settings → Integrations → MCP
+#
+#   SUPABASE_URL               — platform Supabase URL (https://[id].supabase.co)
+#   SUPABASE_SERVICE_ROLE_KEY  — platform service_role key (bypasses RLS — never expose)
+#
+#   ENCRYPTION_KEY             — MUST match the platform Worker's ENCRYPTION_KEY exactly
+#                                Same AES-256-GCM key used to encrypt client credentials
+#
+# Optional (only needed if you use GitHub/CF tools directly from this server):
+#   GITHUB_TOKEN               — operator GitHub token (for operator-level repo access)
+#   CLOUDFLARE_API_TOKEN       — operator CF API token
+#   CLOUDFLARE_ACCOUNT_ID      — operator CF account ID
+#
+# Note: Per-client GitHub/CF/Supabase tokens are stored encrypted in the platform
+# Supabase clients table and decrypted here using ENCRYPTION_KEY. You only need
+# GITHUB_TOKEN etc. above if you want operator-level access independent of clients.
+#
+# Setup:
+#   cd forma-mcp-server
+#   wrangler secret put MCP_API_KEY
+#   wrangler secret put SUPABASE_URL
+#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#   wrangler secret put ENCRYPTION_KEY
+#   wrangler deploy
+#
+# Then register in claude.ai:
+#   Settings → Integrations → Add MCP Server
+#   Name: Formaut
+#   URL:  https://forma-mcp-server.<your-subdomain>.workers.dev/mcp
+#   Auth: Bearer <your MCP_API_KEY>
