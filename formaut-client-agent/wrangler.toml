@@ -1,0 +1,14 @@
+name = "formaut-client-agent"
+main = "index.js"
+compatibility_date = "2026-05-14"
+
+[vars]
+AGENT_VERSION = "0.1.0"
+SCHEMA_VERSION = "2026-05"
+# Required secrets:
+# CLIENT_SLUG
+# FORMAUT_CONTROL_PLANE_URL
+# FORMAUT_AGENT_SECRET
+# Optional vars/secrets:
+# SITE_URL
+# PAGES_PROJECT_NAME

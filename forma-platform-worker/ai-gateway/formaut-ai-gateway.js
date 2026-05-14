@@ -1,5 +1,9 @@
 import { routeDashboardMessage, estimateRouteCost, MODEL_PRICE_PER_MILLION } from '../chat-cost-gate.js';
 import { guardScope } from '../formaut-scope-guard.js';
+import { classifyGatewayIntent } from './intent-classifier.js';
+import { buildThroughputDecision } from './throughput-policy.js';
+import { selectProviderRoute } from './provider-router.js';
+import { selectModelPolicy } from './model-policy.js';
 
 export const AI_GATEWAY_VERSION = '1.0.0';
 
@@ -99,6 +103,7 @@ export async function runFormautAiGateway(input = {}, env = {}, deps = {}) {
   }
 
   const promptCache = planAnthropicPromptCaching({ request, cost, cachePlan });
+  const providerRoute = selectProviderRoute({ intent: classifyGatewayIntent(request), tier: request.tier, estimate: budget.estimate, env });
   const trace = buildTrace({ request, cost, scope, cache: cachePlan, budget, promptCache, startedAt, decision: 'llm_allowed' });
   await safeLogGatewayTrace({ trace, request, cost, scope, cachePlan, budget, env, supabase });
 
@@ -113,6 +118,7 @@ export async function runFormautAiGateway(input = {}, env = {}, deps = {}) {
     next_action: cost.route.next_action,
     cache: stripCachedResponse(cachePlan),
     prompt_cache: promptCache,
+    provider_route: providerRoute,
     anthropic_request_policy: {
       idempotency_key: cachePlan.request_fingerprint,
       timeout_ms: selectTimeoutMs(cost.intent),
@@ -234,23 +240,24 @@ export async function evaluateBudget({ request, cost, env, supabase }) {
   }
 
   const monthState = await loadMonthlyGatewaySpend({ slug: request.slug, env, supabase });
-  const hard = Number(env.AI_GATEWAY_MONTHLY_HARD_CENTS || DEFAULT_POLICY.defaultMonthlyHardCents);
-  const soft = Number(env.AI_GATEWAY_MONTHLY_SOFT_CENTS || DEFAULT_POLICY.defaultMonthlySoftCents);
-  const projected = Number(monthState.cost_cents || 0) + Number(estimate.estimated_cost_cents || 0);
+  const intent = classifyGatewayIntent(request);
+  const throughput = buildThroughputDecision({ request, intent, estimate, monthly: monthState, env });
 
-  if (projected >= hard) {
+  if (!throughput.allowed) {
     return {
       blocked: true,
       response: 'This client is at the monthly AI budget limit. Use deterministic tools, cached context, or ask for explicit operator approval before another model call.',
-      reason: 'monthly_hard_limit',
+      reason: throughput.reason,
       estimate,
       month: monthState,
+      throughput,
     };
   }
 
-  if (projected >= soft && route.model && route.model.includes('sonnet')) {
-    route.model = 'claude-3-5-haiku-latest';
-    route.max_tokens = Math.min(Number(route.max_tokens || 500), 500);
+  const selected = selectModelPolicy({ intent, degraded: throughput.degraded, requestedModel: route.model });
+  if (throughput.degraded || !route.model) {
+    route.model = selected.model;
+    route.max_tokens = Math.min(Number(route.max_tokens || selected.max_tokens || 500), selected.max_tokens || 500);
   }
 
   return {
@@ -259,6 +266,8 @@ export async function evaluateBudget({ request, cost, env, supabase }) {
     max_tokens: route.max_tokens,
     estimate: estimateRouteCost(route),
     month: monthState,
+    throughput,
+    model_policy: selected,
     downgraded: route.model !== cost.route.model,
   };
 }

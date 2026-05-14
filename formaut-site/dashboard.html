@@ -106,6 +106,9 @@
         <button class="sidebar-btn" id="nav-mcp" onclick="setView('mcp')">
           <span class="sidebar-btn-icon">🤖</span> Connected agents
         </button>
+        <button class="sidebar-btn" id="nav-api" onclick="setView('api')">
+          <span class="sidebar-btn-icon">🔑</span> API access
+        </button>
       </div>
 
       <div class="sidebar-divider"></div>
@@ -699,6 +702,54 @@
       </div>
 
 
+
+      <!-- API access panel -->
+      <div class="workspace-panel" id="api-panel">
+        <div class="workspace-topline">
+          <div>
+            <div class="workspace-eyebrow">API access</div>
+            <h1 class="workspace-title">Programmatic access to your site data.</h1>
+            <p class="workspace-subtitle">Create scoped API tokens for tools, scripts, and client-side integrations. Raw tokens are shown once.</p>
+          </div>
+          <button class="small-action-btn primary" onclick="showCreateTokenModal()">+ Create API token</button>
+        </div>
+        <div class="connection-card" style="margin-top:1rem;">
+          <div class="workspace-eyebrow" style="margin-bottom:0.5rem;">Active tokens</div>
+          <div id="api-tokens-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
+          <div style="margin-top:16px;font-size:13px;color:var(--fog,#8a8a82)">
+            <a href="#" onclick="downloadOpenApiSpec();return false" style="color:var(--ember,#E85D26)">Download OpenAPI spec</a>
+            — import into Postman, Insomnia, or your IDE.
+          </div>
+        </div>
+      </div>
+
+      <div id="create-token-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center">
+        <div style="background:white;color:#111;border-radius:10px;padding:28px;max-width:480px;width:100%;margin:24px;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+          <h3 style="margin-bottom:16px">New API token</h3>
+          <label style="font-size:13px;font-weight:500">Label<br>
+            <input id="new-token-label" type="text" placeholder="e.g. Google Sheets sync" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid #e5e5e2;border-radius:6px;font-size:14px">
+          </label>
+          <div style="margin-top:14px;font-size:13px;font-weight:500">Scopes</div>
+          <div id="scope-checkboxes" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto"></div>
+          <div style="margin-top:20px;display:flex;gap:8px;justify-content:flex-end">
+            <button class="small-action-btn" onclick="closeCreateTokenModal()">Cancel</button>
+            <button class="small-action-btn primary" onclick="createApiToken()">Create token</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="token-reveal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center">
+        <div style="background:white;color:#111;border-radius:10px;padding:28px;max-width:480px;width:100%;margin:24px">
+          <h3 style="margin-bottom:8px">Your new API token</h3>
+          <p style="font-size:13px;color:#6b6b65;margin-bottom:12px">Copy this now — it will not be shown again.</p>
+          <div style="background:#f7f7f5;border:1px solid #e5e5e2;border-radius:6px;padding:12px;font-family:monospace;font-size:13px;word-break:break-all" id="token-reveal-value"></div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="small-action-btn primary" onclick="copyRevealedToken()">Copy token</button>
+            <button class="small-action-btn" onclick="closeTokenRevealModal()">Done</button>
+          </div>
+        </div>
+      </div>
+
       <!-- PREVIEW PANEL — slides in when agent generates a preview -->
       <div class="preview-panel" id="preview-panel">
         <div class="preview-header">
@@ -754,9 +805,11 @@
   <script src="/assets/js/dashboard-state.js"></script>
   <script src="/assets/js/dashboard-connections.js"></script>
   <script src="/assets/js/dashboard-jobs-reviews.js"></script>
+  <script src="/assets/js/dashboard-build.js"></script>
   <script src="/assets/js/dashboard-chat.js"></script>
   <script src="/assets/js/dashboard-panels.js"></script>
   <script src="/assets/js/dashboard-infra-mcp.js"></script>
+  <script src="/assets/js/dashboard-api.js"></script>
   <script src="/assets/js/dashboard-auth-settings.js"></script>
   <script src="/assets/js/dashboard-operator.js"></script>
   <script src="/assets/js/dashboard-boot.js"></script>

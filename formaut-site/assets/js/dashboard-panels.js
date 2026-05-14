@@ -25,10 +25,11 @@ function setView(view) {
         .map(id => document.getElementById(id));
       const infrastructurePanel = document.getElementById('infrastructure-panel');
       const mcpPanel             = document.getElementById('mcp-panel');
+      const apiPanel             = document.getElementById('api-panel');
 
       // Hide all workspace panels
       [connections, jobs, reviews, adminPanel, emailPanel, activityPanel, settingsPanel, billingPanel,
-       infrastructurePanel, mcpPanel, ...opPanels]
+       infrastructurePanel, mcpPanel, apiPanel, ...opPanels]
         .forEach(p => p?.classList.remove('active'));
 
       // Stop jobs polling if leaving jobs view
@@ -109,6 +110,16 @@ function setView(view) {
         input.style.display = 'none';
         infrastructurePanel?.classList.add('active');
         loadInfrastructure();
+        return;
+      }
+
+
+      if (view === 'api') {
+        welcome.style.display = 'none';
+        thread.style.display = 'none';
+        input.style.display = 'none';
+        apiPanel?.classList.add('active');
+        if (typeof initApiPanel === 'function') initApiPanel();
         return;
       }
 

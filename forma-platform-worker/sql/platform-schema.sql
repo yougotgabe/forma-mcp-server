@@ -1820,6 +1820,95 @@ create index if not exists design_quality_runs_client_slug_idx
   on design_quality_runs (client_slug, created_at desc);
 
 
+
+-- ============================================================
+-- SECTION 13c: RECONCILED MISSING SYSTEMS
+-- Client API tokens, subscription lifecycle, notification dispatcher compatibility.
+-- ============================================================
+
+create table if not exists client_api_tokens (
+  id             uuid        primary key default gen_random_uuid(),
+  created_at     timestamptz not null default now(),
+  client_slug    text        not null references clients(slug) on delete cascade,
+  token_hash     text        not null unique,
+  token_prefix   text        not null,
+  label          text        not null,
+  scopes         text[]      not null default '{}',
+  expires_at     timestamptz,
+  last_used_at   timestamptz,
+  use_count      integer     not null default 0,
+  revoked        boolean     not null default false,
+  revoked_at     timestamptz,
+  revoked_reason text
+);
+
+create index if not exists client_api_tokens_slug_idx on client_api_tokens (client_slug, revoked);
+create index if not exists client_api_tokens_hash_idx on client_api_tokens (token_hash);
+
+create table if not exists client_api_audit_log (
+  id             uuid        primary key default gen_random_uuid(),
+  created_at     timestamptz not null default now(),
+  client_slug    text        not null,
+  event_type     text        not null,
+  meta           jsonb       not null default '{}'
+);
+create index if not exists client_api_audit_log_slug_idx on client_api_audit_log (client_slug, created_at desc);
+
+alter table client_api_tokens enable row level security;
+do $$ begin
+  create policy "service role manages client api tokens"
+    on client_api_tokens for all to service_role using (true) with check (true);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "deny anon: client_api_tokens"
+    on client_api_tokens for all to anon using (false) with check (false);
+exception when duplicate_object then null; end $$;
+
+alter table client_api_audit_log enable row level security;
+do $$ begin
+  create policy "service role manages client api audit log"
+    on client_api_audit_log for all to service_role using (true) with check (true);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "deny anon: client_api_audit_log"
+    on client_api_audit_log for all to anon using (false) with check (false);
+exception when duplicate_object then null; end $$;
+
+alter table clients
+  add column if not exists lifecycle_state       text not null default 'active',
+  add column if not exists lifecycle_state_since timestamptz,
+  add column if not exists payment_failed_at     timestamptz,
+  add column if not exists subscription_status   text not null default 'active';
+
+create table if not exists subscription_events (
+  id             uuid        primary key default gen_random_uuid(),
+  created_at     timestamptz not null default now(),
+  client_slug    text        not null references clients(slug) on delete cascade,
+  from_state     text,
+  to_state       text        not null,
+  reason         text
+);
+create index if not exists subscription_events_slug_idx
+  on subscription_events (client_slug, created_at desc);
+
+alter table subscription_events enable row level security;
+do $$ begin
+  create policy "service role manages subscription events"
+    on subscription_events for all to service_role using (true) with check (true);
+exception when duplicate_object then null; end $$;
+
+-- notification_log already exists earlier in this schema. These columns make it
+-- compatible with notification-dispatcher.js without replacing the existing log.
+alter table notification_log
+  add column if not exists event_type text,
+  add column if not exists sent_to text,
+  add column if not exists meta jsonb not null default '{}'::jsonb;
+
+create index if not exists notification_log_slug_event_idx
+  on notification_log (client_slug, event_type, created_at desc);
+
 -- ============================================================
 -- SECTION 14: PERMISSIONS + GRANTS
 -- ============================================================
@@ -1887,3 +1976,97 @@ grant select, insert, update, delete on table
 to service_role;
 
 grant usage, select on all sequences in schema public to service_role;
+
+-- ============================================================
+-- SECTION 15: CLIENT AGENT RUNTIME + CANONICAL ENTITIES + ROLLOUT
+-- Added to reconcile the repo with the distributed Formaut architecture.
+-- ============================================================
+
+create table if not exists client_agent_runtimes (
+  id              uuid primary key default gen_random_uuid(),
+  client_id       uuid references clients(id) on delete cascade,
+  client_slug     text not null unique,
+  agent_version   text not null default 'unknown',
+  schema_version  text not null default 'unknown',
+  runtime_mode    text not null default 'stable',
+  capabilities    jsonb not null default '[]'::jsonb,
+  status          text not null default 'registered'
+                  check (status in ('registered','healthy','attention','disabled','stale')),
+  last_seen_at    timestamptz,
+  last_event_id   uuid,
+  metadata        jsonb not null default '{}'::jsonb,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create index if not exists client_agent_runtimes_seen_idx
+  on client_agent_runtimes (last_seen_at desc, status);
+
+drop trigger if exists client_agent_runtimes_touch on client_agent_runtimes;
+create trigger client_agent_runtimes_touch
+before update on client_agent_runtimes
+for each row execute function touch_updated_at();
+
+create table if not exists client_agent_events (
+  id              uuid primary key default gen_random_uuid(),
+  event_id        uuid not null unique,
+  client_slug     text not null,
+  event_type      text not null,
+  severity        text not null default 'info'
+                  check (severity in ('critical','warn','info')),
+  nonce           text not null,
+  signature_hint  text,
+  agent_version   text,
+  schema_version  text,
+  payload         jsonb not null default '{}'::jsonb,
+  received_at     timestamptz not null default now(),
+  created_at      timestamptz not null default now()
+);
+
+create unique index if not exists client_agent_events_nonce_unique
+  on client_agent_events (client_slug, nonce);
+
+create index if not exists client_agent_events_client_time_idx
+  on client_agent_events (client_slug, received_at desc);
+
+create table if not exists canonical_entities (
+  id          uuid primary key default gen_random_uuid(),
+  client_id   uuid references clients(id) on delete cascade,
+  client_slug text,
+  entity_type text not null,
+  source      text not null,
+  source_id   text,
+  title       text,
+  status      text not null default 'active',
+  confidence  numeric(4,3) not null default 0.800,
+  canonical   jsonb not null default '{}'::jsonb,
+  raw         jsonb not null default '{}'::jsonb,
+  updated_at  timestamptz not null default now(),
+  created_at  timestamptz not null default now(),
+  unique (client_slug, entity_type, source, source_id)
+);
+
+create index if not exists canonical_entities_lookup_idx
+  on canonical_entities (client_slug, entity_type, status, updated_at desc);
+
+create table if not exists rollout_events (
+  id           uuid primary key default gen_random_uuid(),
+  client_slug  text,
+  feature_key  text not null,
+  event_type   text not null,
+  from_version text,
+  to_version   text,
+  decision     jsonb not null default '{}'::jsonb,
+  created_by   text not null default 'system',
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists rollout_events_feature_idx
+  on rollout_events (feature_key, created_at desc);
+
+grant select, insert, update, delete on table
+  public.client_agent_runtimes,
+  public.client_agent_events,
+  public.canonical_entities,
+  public.rollout_events
+ to service_role;

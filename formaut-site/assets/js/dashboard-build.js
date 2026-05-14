@@ -20,11 +20,28 @@ async function triggerSiteBuild(trigger = 'manual') {
 
   const btn = document.getElementById('build-site-btn');
   const statusEl = document.getElementById('build-trigger-status');
+
   if (btn) btn.disabled = true;
-  if (statusEl) { statusEl.textContent = 'Queuing jobs…'; statusEl.style.display = 'block'; }
+  if (statusEl) { statusEl.textContent = 'Checking readiness…'; statusEl.style.display = 'block'; }
 
   try {
-    // Queue homepage generation
+    const readinessRes = await fetch('/api/profile/readiness', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+      body: JSON.stringify({ slug }),
+    });
+    const readinessData = await readinessRes.json();
+    const readiness = readinessData.readiness || readinessData.report || readinessData;
+
+    if (!readiness?.ready) {
+      if (btn) btn.disabled = false;
+      if (statusEl) { statusEl.textContent = ''; statusEl.style.display = 'none'; }
+      renderReadinessBlockers(readiness);
+      return;
+    }
+
+    if (statusEl) statusEl.textContent = 'Queuing jobs…';
+
     const homepageRes = await fetch('/api/jobs/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
@@ -36,13 +53,13 @@ async function triggerSiteBuild(trigger = 'manual') {
         payload: {
           trigger,
           requires_review_before_publish: true,
+          business_type: readiness.business_type,
         },
       }),
     });
     const homepageData = await homepageRes.json();
     if (!homepageRes.ok) throw new Error(homepageData.error || 'Could not queue homepage job');
 
-    // Queue SEO generation
     fetch('/api/jobs/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
@@ -51,17 +68,13 @@ async function triggerSiteBuild(trigger = 'manual') {
         job_type: 'generate_seo',
         priority: 70,
         created_by: 'dashboard_build_trigger',
-        payload: { trigger },
+        payload: { trigger, business_type: readiness.business_type },
       }),
     }).catch(() => {});
 
     const jobId = homepageData.job?.id || null;
     if (statusEl) statusEl.textContent = 'Building your site — this takes about 30 seconds…';
-
-    // Switch to jobs view so they can watch it run
     setView('jobs');
-
-    // Poll until the job completes, then redirect to reviews
     if (jobId) pollBuildJobUntilDone(jobId, googleToken);
 
   } catch (err) {
@@ -69,6 +82,35 @@ async function triggerSiteBuild(trigger = 'manual') {
     if (statusEl) { statusEl.textContent = ''; statusEl.style.display = 'none'; }
     alert(err.message || 'Could not start build.');
   }
+}
+
+function renderReadinessBlockers(readiness) {
+  const card = document.getElementById('build-site-card') || document.getElementById('welcome-state');
+  if (!card) return;
+
+  const existingBlockers = document.getElementById('build-readiness-blockers');
+  if (existingBlockers) existingBlockers.remove();
+
+  const blockers = readiness?.blockers || [];
+  const blockersHtml = blockers.length ? blockers.map(b => `
+    <div style="background:rgba(232,93,38,0.07);border:1px solid rgba(232,93,38,0.25);border-radius:5px;padding:10px 14px;margin-bottom:8px;font-size:0.83rem;line-height:1.5;color:var(--fog,#8a8a82)">
+      <strong style="color:var(--ember,#E85D26)">${escHtml(b.label || b.type || 'Missing requirement')}</strong><br>
+      ${escHtml(b.message || b.detail || String(b))}
+      ${b.type === 'infrastructure_missing' ? `<br><a href="/onboarding.html" style="color:var(--ember,#E85D26);text-decoration:none;font-weight:500">→ Connect accounts</a>` : ''}
+    </div>`).join('') : '<div style="color:var(--fog,#8a8a82);font-size:0.83rem">Formaut needs a little more information before building.</div>';
+
+  const el = document.createElement('div');
+  el.id = 'build-readiness-blockers';
+  el.style.marginTop = '12px';
+  el.innerHTML = blockersHtml + (readiness?.next_question
+    ? `<div style="font-size:0.83rem;color:var(--fog,#8a8a82);margin-top:8px">💬 <em>${escHtml(readiness.next_question)}</em> — tell Formaut in chat.</div>`
+    : '');
+
+  card.appendChild(el);
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function pollBuildJobUntilDone(jobId, googleToken) {
@@ -376,5 +418,5 @@ function renderReviewCard(review) {
 }
 
 function escHtml(str) {
-  return String(str == null ? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

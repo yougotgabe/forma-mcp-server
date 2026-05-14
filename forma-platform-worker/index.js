@@ -93,6 +93,58 @@ import {
   handleAgentExport,
 } from './agent-interoperability.js';
 
+import {
+  handleClientAgentRegister,
+  handleClientAgentHeartbeat,
+  handleClientAgentEvent,
+  listClientAgentRuntimes,
+} from './operational/operational-event-intake.js';
+import { handleNormalizeIntegrationEntity } from './integration-normalization/normalization-endpoint.js';
+import { handleRolloutPlan, handleRolloutStatus } from './rollout-system/rollout-coordinator.js';
+
+import {
+  handleProfileReadiness,
+} from './profile-readiness-engine.js';
+import {
+  handleAdminGeneratorBuild,
+} from './admin-generator/admin-html-generator.js';
+import {
+  handleClientApiTokenCreate,
+  handleClientApiTokenList,
+  handleClientApiTokenRevoke,
+  handleClientApiTokenRotate,
+  handleClientApiTokenVerify,
+  handleClientApiTokenAudit,
+  handleClientApiOpenApiSpec,
+} from './client-api-token-system.js';
+import {
+  checkSubscriptionGate,
+  handleSubscriptionCheckAll,
+  handleSubscriptionStatus,
+  handleSubscriptionReactivate,
+} from './subscription-lifecycle.js';
+import {
+  dispatch,
+  handleWeeklyDigest,
+  handleInactivityCheck,
+} from './notification-dispatcher.js';
+
+import {
+  createArtifactReview,
+  listArtifactReviews as listApprovalReviews,
+  getArtifactReview,
+  decideArtifactReview,
+  listChangeLog,
+  createSiteSnapshot,
+  listSiteSnapshots,
+  rollbackToSnapshot,
+  createPublishRequest,
+  publishGateCheck,
+} from './formaut-approval-control.js';
+
+import { runFormautAiGateway, recordGatewayCompletion } from './ai-gateway/formaut-ai-gateway.js';
+import { maybeCreatePreviewBranch } from './artifact-preview-branch.js';
+
 // =============================================================================
 // FORMA - PLATFORM WORKER
 // =============================================================================
@@ -140,6 +192,8 @@ export default {
     const secret = request.headers.get('x-worker-secret');
     const isWorkerAuthorized = Boolean(secret && secret === env.WORKER_SECRET);
     const devPreflightSecret = request.headers.get('x-formaut-dev-test');
+    const isClientAgentSignedRoute = path === '/client-agent/events/ingest';
+
     const isDevPreflightTest = (
       path === '/chat/preflight' &&
       env.ALLOW_DEV_PREFLIGHT_TESTS === 'true' &&
@@ -147,7 +201,7 @@ export default {
       devPreflightSecret === env.DEV_PREFLIGHT_SECRET
     );
 
-    if (!isWorkerAuthorized && !isDevPreflightTest) {
+    if (!isWorkerAuthorized && !isDevPreflightTest && !isClientAgentSignedRoute) {
       return json({ error: 'Unauthorized' }, 401);
     }
 
@@ -166,6 +220,8 @@ export default {
     // Route
     // -------------------------------------------------------------------------
     try {
+      // Shared supabase adapter for routes that need it via deps object
+      const supabase = supabaseAdapter(env);
       if (path === '/chat/cost-gate')  return handleChatCostGate(body, env);
       if (path === '/chat/scope-guard') return handleChatScopeGuard(body, env);
       if (path === '/chat/preflight')  return handleChatPreflight(body, env);
@@ -196,6 +252,13 @@ export default {
       if (path === '/signals/list') return handleSignalsList(body, env);
       if (path === '/signals/promote') return handleSignalPromote(body, env);
       if (path === '/signals/dismiss') return handleSignalDismiss(body, env);
+      if (path === '/client-agent/register') return json(await handleClientAgentRegister(body, env, { supabase }));
+      if (path === '/client-agent/heartbeat') return json(await handleClientAgentHeartbeat(body, env, { supabase }));
+      if (path === '/client-agent/events/ingest') return json(await handleClientAgentEvent(body, env, { supabase }));
+      if (path === '/client-agent/runtimes') return json(await listClientAgentRuntimes(body, env, { supabase }));
+      if (path === '/integrations/normalize') return json(await handleNormalizeIntegrationEntity(body, env, { supabase }));
+      if (path === '/rollout/plan') return json(await handleRolloutPlan(body, env, { supabase }));
+      if (path === '/rollout/status') return json(await handleRolloutStatus(body, env, { supabase }));
 
       if (path === '/artifacts/versions/create') return handleArtifactVersionCreate(body, env);
       if (path === '/artifacts/versions/list') return handleArtifactVersionsList(body, env);
@@ -265,6 +328,61 @@ export default {
       if (path === '/maintenance/checks/run') return handleMaintenanceChecksRun(body, env);
       if (path === '/design-intelligence/recommend') return handleDesignIntelligenceRecommend(body, env);
       if (path === '/admin-generator/manifest') return handleAdminGeneratorManifest(body, env);
+      // --- Missing systems reconciliation: readiness, generated admin HTML, client API, subscription, notifications ---
+      if (path === '/profile/readiness') return handleProfileReadiness(body, env);
+      if (path === '/admin-generator/build') return handleAdminGeneratorBuild(body, env);
+      if (path === '/client-api/tokens/create') return handleClientApiTokenCreate(body, env);
+      if (path === '/client-api/tokens/list') return handleClientApiTokenList(body, env);
+      if (path === '/client-api/tokens/revoke') return handleClientApiTokenRevoke(body, env);
+      if (path === '/client-api/tokens/rotate') return handleClientApiTokenRotate(body, env);
+      if (path === '/client-api/tokens/verify') return handleClientApiTokenVerify(body, env);
+      if (path === '/client-api/tokens/audit') return handleClientApiTokenAudit(body, env);
+      if (path === '/client-api/openapi') return handleClientApiOpenApiSpec(body, env);
+      if (path === '/subscription/status') return handleSubscriptionStatus(body, env);
+      if (path === '/subscription/check-all') return handleSubscriptionCheckAll(body, env);
+      if (path === '/subscription/reactivate') return handleSubscriptionReactivate(body, env);
+      if (path === '/notifications/weekly-digest') return handleWeeklyDigest(body, env);
+      if (path === '/notifications/inactivity-check') return handleInactivityCheck(body, env);
+      if (path === '/notifications/send') {
+        const { event_type, slug, meta } = body;
+        await dispatch(event_type, slug, meta || {}, env);
+        return json({ ok: true });
+      }
+
+      // ── Approval + Change Control (formaut-approval-control) ──────────────
+      if (path === '/reviews/create')    return json(await createArtifactReview(body, env, { supabase }));
+      if (path === '/reviews/get')       return json(await getArtifactReview(body, env, { supabase }));
+      if (path === '/reviews/list')      return json(await listApprovalReviews(body, env, { supabase }));
+      if (path === '/reviews/decide')    return json(await decideArtifactReview(body, env, { supabase }));
+      if (path === '/changes/list')      return json(await listChangeLog(body, env, { supabase }));
+      if (path === '/snapshots/create')  return json(await createSiteSnapshot(body, env, { supabase }));
+      if (path === '/snapshots/list')    return json(await listSiteSnapshots(body, env, { supabase }));
+      if (path === '/snapshots/rollback') return json(await rollbackToSnapshot(body, env, { supabase }));
+      if (path === '/publish/request')   return json(await createPublishRequest(body, env, { supabase }));
+      if (path === '/publish/check')     return json(await publishGateCheck(body, env, { supabase }));
+
+      // ── AI Gateway (chat/ai-gateway — superset of /chat/preflight) ────────
+      // The dashboard chat.js continues to call /chat/preflight.
+      // /chat/ai-gateway is a richer version that adds provider routing, model
+      // policy, cache planning, and spend tracking. Wire both so they coexist.
+      if (path === '/chat/ai-gateway') {
+        const result = await runFormautAiGateway(body, env, { supabase });
+        return json(result);
+      }
+      if (path === '/chat/ai-gateway/complete') {
+        await recordGatewayCompletion(body, env, { supabase });
+        return json({ ok: true });
+      }
+
+      // ── Artifact Preview Branch ────────────────────────────────────────────
+      // Called after a version enters pending_review to push preview branch.
+      if (path === '/artifacts/preview-branch') {
+        const { artifact_version, client } = body;
+        if (!artifact_version || !client) return json({ error: 'artifact_version and client required' }, 400);
+        const result = await maybeCreatePreviewBranch(artifact_version, client, env, { supabase });
+        return json(result);
+      }
+
 
       // ── Capability registry ────────────────────────────────────────────────
       if (path === '/platform/capabilities') {
@@ -341,12 +459,28 @@ export default {
 
 
 async function runScheduledOperationalLoop(event, env) {
+  const now = new Date();
+  const minuteOfHour = now.getMinutes();
+  const hourOfDay = now.getUTCHours();
+  const dayOfWeek = now.getUTCDay();
+
   const maintenance = await runOperationalMaintenanceLoop(env, operationalDeps(env));
   const queue = await consumeJobs({
     queue: env.JOBS_DEFAULT_QUEUE || 'default',
     limit: Number(env.JOBS_CRON_LIMIT || 5),
   }, env, queueDeps(env));
-  return { ok: true, maintenance, queue };
+
+  const subscription = await handleSubscriptionCheckAll({}, env).catch(err => ({ ok: false, error: err.message }));
+  let inactivity = null;
+  let weeklyDigest = null;
+  if (minuteOfHour < 15 && hourOfDay === 10) {
+    inactivity = await handleInactivityCheck({}, env).catch(err => ({ ok: false, error: err.message }));
+  }
+  if (dayOfWeek === 1 && hourOfDay === 9 && minuteOfHour < 15) {
+    weeklyDigest = await handleWeeklyDigest({}, env).catch(err => ({ ok: false, error: err.message }));
+  }
+
+  return { ok: true, maintenance, queue, subscription, inactivity, weekly_digest: weeklyDigest };
 }
 
 
@@ -585,7 +719,24 @@ async function safeSupabaseRows(env, path) {
 // =============================================================================
 
 async function handleJobCreate(body, env) {
+  const slug = body.slug || body.client_slug || body.payload?.slug || body.payload?.client_slug;
+  const jobType = body.job_type || body.type;
+  if (slug) {
+    const operationType = isDeployJob(jobType) ? 'deploy' : isBuildJob(jobType) ? 'build' : 'maintenance';
+    const gate = await checkSubscriptionGate(slug, env);
+    if (!gate.allowed) {
+      return json({ ok: false, error: 'subscription_gate', operation_type: operationType, reason: gate.reason, notice: gate.notice }, 402);
+    }
+  }
   return json(await produceJob(body, env, queueDeps(env)));
+}
+
+function isBuildJob(jobType) {
+  return ['generate_homepage', 'generate_seo', 'generate_admin', 'full_rebuild', 'homepage_generation', 'seo_generation'].includes(jobType);
+}
+
+function isDeployJob(jobType) {
+  return ['publish_artifact', 'trigger_deploy', 'deploy_pages', 'validate_deployment'].includes(jobType);
 }
 
 async function handleJobStatus(body, env) {
@@ -670,6 +821,14 @@ async function handleArtifactReviewDecision(body, env) {
  * skip_github=true lets you do a dry-run DB-only publish (useful in tests).
  */
 async function handleArtifactPublish(body, env) {
+  const publishSlug = body.slug || body.client_slug;
+  if (publishSlug) {
+    const gate = await checkSubscriptionGate(publishSlug, env);
+    if (!gate.allowed) {
+      return json({ ok: false, error: 'subscription_gate', operation_type: 'deploy', reason: gate.reason, notice: gate.notice }, 402);
+    }
+  }
+
   // Step 1: DB publish — marks version as published, creates publish_transaction
   const publishResult = await publishArtifactVersion(body, env, artifactPipelineDeps(env));
 
@@ -713,11 +872,20 @@ async function handleArtifactPublish(body, env) {
       );
     }
 
+    dispatch('deploy.success', version.client_slug || body.client_slug || body.slug, {
+      url: githubResult.live_url || githubResult.preview_url || null,
+      artifact_type: version.artifact_type,
+      commit_sha: githubResult.commit_sha,
+    }, env).catch(console.error);
     return json({ ...publishResult, github: githubResult });
 
   } catch (githubErr) {
     // GitHub write failed — surface clearly but don't hide the DB publish
     // The artifact is marked published in the DB; operator can retry the commit.
+    dispatch('deploy.failed', version?.client_slug || body.client_slug || body.slug, {
+      error: githubErr.message,
+      artifact_type: version?.artifact_type,
+    }, env).catch(console.error);
     return json({
       ...publishResult,
       github: {

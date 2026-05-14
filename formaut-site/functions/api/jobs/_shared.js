@@ -12,8 +12,15 @@ export async function proxyJob(context, workerPath) {
   if (request.method === 'OPTIONS') return cors(204);
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+
   const authHeader = request.headers.get('Authorization') || '';
-  const googleToken = authHeader.replace('Bearer ', '').trim();
+  const googleToken = authHeader.replace('Bearer ', '').trim() || body._token || request.headers.get('x-google-token') || '';
   if (!googleToken) return json({ error: 'Unauthorized' }, 401);
 
   let verifiedEmail;
@@ -26,13 +33,6 @@ export async function proxyJob(context, workerPath) {
     verifiedEmail = tokenData.email;
   } catch {
     return json({ error: 'Authentication failed' }, 401);
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON' }, 400);
   }
 
   const slug = body.slug || body.client_slug || body.client_id || body.clientId;
@@ -53,20 +53,24 @@ export async function proxyJob(context, workerPath) {
     return json({ error: 'Forbidden' }, 403);
   }
 
+  const workerBase = env.PLATFORM_WORKER_URL || env.WORKER_URL;
+  if (!workerBase) return json({ error: 'Platform worker URL is not configured' }, 500);
+
   try {
-    const workerRes = await fetch(`${env.PLATFORM_WORKER_URL}${workerPath}`, {
+    const { _token, ...cleanBody } = body;
+    const workerRes = await fetch(`${workerBase}${workerPath}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-worker-secret': env.WORKER_SECRET,
       },
-      body: JSON.stringify({ ...body, slug: clientRecord.slug, client_id: clientRecord.id }),
+      body: JSON.stringify({ ...cleanBody, slug: clientRecord.slug, client_slug: clientRecord.slug, client_id: clientRecord.id }),
     });
 
     const data = await workerRes.json().catch(() => ({}));
     return json(data, workerRes.status);
   } catch {
-    return json({ error: 'Could not reach job service' }, 502);
+    return json({ error: 'Could not reach platform service' }, 502);
   }
 }
 
