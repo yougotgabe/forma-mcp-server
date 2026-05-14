@@ -24,358 +24,94 @@
       --f-body:       'DM Sans', system-ui, sans-serif;
       --f-mono:       'DM Mono', monospace;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--ink);
-      color: var(--paper);
-      font-family: var(--f-body);
-      font-weight: 300;
-      line-height: 1.6;
-      min-height: 100dvh;
-    }
-
+    body { background: var(--ink); color: var(--paper); font-family: var(--f-body); font-weight: 300; line-height: 1.6; min-height: 100dvh; }
     ::selection { background: var(--ember); color: var(--paper); }
     a { color: inherit; text-decoration: none; }
-
-    /* ── Top bar ── */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1.1rem 2rem;
-      border-bottom: 1px solid var(--wire);
-    }
-
-    .logo {
-      font-family: var(--f-display);
-      font-size: 1.15rem;
-      font-weight: 900;
-      letter-spacing: -0.02em;
-      color: var(--paper);
-    }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: 1px solid var(--wire); }
+    .logo { font-family: var(--f-display); font-size: 1.15rem; font-weight: 900; letter-spacing: -0.02em; color: var(--paper); }
     .logo span { color: var(--ember); }
-
-    .topbar-meta {
-      font-family: var(--f-mono);
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--fog);
-    }
-
-    /* ── Layout ── */
-    .page {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 3.5rem 2rem 6rem;
-    }
-
-    /* ── Progress ── */
-    .progress-bar {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 3rem;
-    }
-
-    .progress-segment {
-      height: 3px;
-      flex: 1;
-      background: var(--wire);
-      border-radius: 2px;
-      transition: background 0.4s;
-    }
+    .topbar-meta { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fog); }
+    .page { max-width: 680px; margin: 0 auto; padding: 3.5rem 2rem 6rem; }
+    .progress-bar { display: flex; gap: 4px; margin-bottom: 3rem; }
+    .progress-segment { height: 3px; flex: 1; background: var(--wire); border-radius: 2px; transition: background 0.4s; }
     .progress-segment.done    { background: var(--ember); }
     .progress-segment.current { background: var(--ember); opacity: 0.5; }
-
-    /* ── Headings ── */
-    .section-label {
-      font-family: var(--f-mono);
-      font-size: 0.68rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ember);
-      margin-bottom: 0.75rem;
-    }
-
-    h1 {
-      font-family: var(--f-display);
-      font-size: clamp(1.75rem, 4vw, 2.5rem);
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      color: var(--paper);
-      margin-bottom: 0.75rem;
-    }
-
-    .intro {
-      font-size: 1rem;
-      color: var(--fog);
-      line-height: 1.7;
-      max-width: 520px;
-      margin-bottom: 2.5rem;
-    }
-
-    /* ── Security notice ── */
-    .security-notice {
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-      padding: 1.1rem 1.25rem;
-      background: var(--ash);
-      border: 1px solid var(--wire);
-      border-left: 3px solid var(--ember);
-      margin-bottom: 2.5rem;
-      font-size: 0.82rem;
-      color: var(--fog);
-      line-height: 1.65;
-    }
-
+    .section-label { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ember); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--f-display); font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; color: var(--paper); margin-bottom: 0.75rem; }
+    .intro { font-size: 1rem; color: var(--fog); line-height: 1.7; max-width: 520px; margin-bottom: 2.5rem; }
+    .security-notice { display: flex; gap: 1rem; align-items: flex-start; padding: 1.1rem 1.25rem; background: var(--ash); border: 1px solid var(--wire); border-left: 3px solid var(--ember); margin-bottom: 2.5rem; font-size: 0.82rem; color: var(--fog); line-height: 1.65; }
     .security-notice strong { color: var(--paper); font-weight: 500; }
-
-    /* ── Step cards ── */
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      background: var(--wire);
-      border: 1px solid var(--wire);
-      margin-bottom: 2rem;
-    }
-
-    .step {
-      background: var(--ink);
-      padding: 1.75rem 1.5rem;
-      transition: background 0.2s;
-    }
+    .steps { display: flex; flex-direction: column; gap: 1px; background: var(--wire); border: 1px solid var(--wire); margin-bottom: 2rem; }
+    .step { background: var(--ink); padding: 1.75rem 1.5rem; transition: background 0.2s; }
     .step.active   { background: var(--ash); }
     .step.complete { background: var(--ink); }
     .step.locked   { opacity: 0.4; pointer-events: none; }
-
-    .step-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .step-num {
-      width: 2rem;
-      height: 2rem;
-      flex-shrink: 0;
-      border: 1px solid var(--wire);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--f-mono);
-      font-size: 0.75rem;
-      color: var(--fog);
-      margin-top: 0.15rem;
-      transition: all 0.2s;
-    }
+    .step-header { display: flex; align-items: flex-start; gap: 1rem; }
+    .step-num { width: 2rem; height: 2rem; flex-shrink: 0; border: 1px solid var(--wire); display: flex; align-items: center; justify-content: center; font-family: var(--f-mono); font-size: 0.75rem; color: var(--fog); margin-top: 0.15rem; transition: all 0.2s; }
     .step.active .step-num   { border-color: var(--ember); color: var(--ember); }
     .step.complete .step-num { background: var(--green-bg); border-color: var(--green-border); color: var(--green); font-size: 0.9rem; }
-
     .step-meta { flex: 1; }
-
-    .step-service {
-      font-family: var(--f-mono);
-      font-size: 0.62rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--fog);
-      margin-bottom: 0.2rem;
-    }
-
-    .step-title {
-      font-family: var(--f-display);
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--paper);
-      letter-spacing: -0.01em;
-    }
-
-    .step-badge {
-      font-family: var(--f-mono);
-      font-size: 0.62rem;
-      letter-spacing: 0.06em;
-      padding: 0.2rem 0.55rem;
-      border: 1px solid var(--wire);
-      color: var(--fog);
-      align-self: center;
-      flex-shrink: 0;
-      transition: all 0.2s;
-    }
-    .step.complete .step-badge {
-      color: var(--green);
-      border-color: var(--green-border);
-      background: var(--green-bg);
-    }
-
-    /* Step body */
-    .step-body {
-      display: none;
-      margin-top: 1.25rem;
-      padding-top: 1.25rem;
-      border-top: 1px solid var(--wire);
-    }
+    .step-service { font-family: var(--f-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fog); margin-bottom: 0.2rem; }
+    .step-title { font-family: var(--f-display); font-size: 1.05rem; font-weight: 600; color: var(--paper); letter-spacing: -0.01em; }
+    .step-badge { font-family: var(--f-mono); font-size: 0.62rem; letter-spacing: 0.06em; padding: 0.2rem 0.55rem; border: 1px solid var(--wire); color: var(--fog); align-self: center; flex-shrink: 0; transition: all 0.2s; }
+    .step.complete .step-badge { color: var(--green); border-color: var(--green-border); background: var(--green-bg); }
+    .step-body { display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--wire); }
     .step.active .step-body { display: block; }
-
-    .step-desc {
-      font-size: 0.9rem;
-      color: var(--fog);
-      line-height: 1.7;
-      margin-bottom: 1.25rem;
-    }
+    .step-desc { font-size: 0.9rem; color: var(--fog); line-height: 1.7; margin-bottom: 1.25rem; }
     .step-desc strong { color: var(--paper); font-weight: 500; }
-
-    .guide-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: var(--f-mono);
-      font-size: 0.68rem;
-      letter-spacing: 0.06em;
-      color: var(--ember);
-      border: 1px solid rgba(200,90,30,0.3);
-      padding: 0.35rem 0.75rem;
-      margin-bottom: 1.5rem;
-      cursor: pointer;
-      background: none;
-      transition: border-color 0.2s;
-    }
+    .guide-link { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.06em; color: var(--ember); border: 1px solid rgba(200,90,30,0.3); padding: 0.35rem 0.75rem; margin-bottom: 1.5rem; cursor: pointer; background: none; transition: border-color 0.2s; }
     .guide-link:hover { border-color: var(--ember); }
-
-    /* ── Fields ── */
     .fields { display: flex; flex-direction: column; gap: 1rem; }
-
     .field { display: flex; flex-direction: column; gap: 0.4rem; }
-
-    .field-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.8rem;
-      color: var(--fog);
-    }
-
-    .field-tag {
-      font-family: var(--f-mono);
-      font-size: 0.58rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 0.1rem 0.4rem;
-      border: 1px solid;
-    }
+    .field-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--fog); }
+    .field-tag { font-family: var(--f-mono); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.1rem 0.4rem; border: 1px solid; }
     .field-tag.secret { color: var(--ember); border-color: rgba(200,90,30,0.4); background: rgba(200,90,30,0.06); }
     .field-tag.plain  { color: var(--fog);   border-color: var(--wire); }
-
-    .field-input {
-      background: var(--ash);
-      border: 1px solid var(--wire);
-      color: var(--paper);
-      font-family: var(--f-mono);
-      font-size: 0.82rem;
-      padding: 0.7rem 0.875rem;
-      outline: none;
-      width: 100%;
-      transition: border-color 0.2s;
-    }
+    .field-input { background: var(--ash); border: 1px solid var(--wire); color: var(--paper); font-family: var(--f-mono); font-size: 0.82rem; padding: 0.7rem 0.875rem; outline: none; width: 100%; transition: border-color 0.2s; }
     .field-input:focus { border-color: var(--ember); }
     .field-input::placeholder { color: var(--smoke); }
-
-    .field-masked {
-      background: var(--ash);
-      border: 1px solid var(--green-border);
-      color: var(--green);
-      font-family: var(--f-mono);
-      font-size: 0.82rem;
-      padding: 0.7rem 0.875rem;
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    .field-masked { background: var(--ash); border: 1px solid var(--green-border); color: var(--green); font-family: var(--f-mono); font-size: 0.82rem; padding: 0.7rem 0.875rem; display: none; align-items: center; gap: 0.5rem; }
     .field-masked.visible { display: flex; }
-
-    .field-hint {
-      font-size: 0.75rem;
-      color: var(--smoke);
-      line-height: 1.5;
-    }
-
-    /* ── Actions ── */
-    .step-actions {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-top: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      background: var(--ember);
-      color: var(--paper);
-      font-family: var(--f-body);
-      font-size: 0.875rem;
-      font-weight: 500;
-      padding: 0.7rem 1.5rem;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
+    .field-hint { font-size: 0.75rem; color: var(--smoke); line-height: 1.5; }
+    .step-actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .btn-primary { background: var(--ember); color: var(--paper); font-family: var(--f-body); font-size: 0.875rem; font-weight: 500; padding: 0.7rem 1.5rem; border: none; cursor: pointer; transition: background 0.2s; }
     .btn-primary:hover    { background: var(--ember-dim); }
     .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .step-saving {
-      font-family: var(--f-mono);
-      font-size: 0.72rem;
-      color: var(--fog);
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    .step-saving { font-family: var(--f-mono); font-size: 0.72rem; color: var(--fog); display: none; align-items: center; gap: 0.5rem; }
     .step-saving.visible { display: flex; }
-
-    .saving-dots span {
-      display: inline-block;
-      width: 3px; height: 3px;
-      border-radius: 50%;
-      background: var(--ember);
-      opacity: 0.4;
-      animation: dot 1.2s ease-in-out infinite;
-    }
+    .saving-dots span { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--ember); opacity: 0.4; animation: dot 1.2s ease-in-out infinite; }
     .saving-dots span:nth-child(2) { animation-delay: 0.2s; }
     .saving-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes dot {
-      0%, 80%, 100% { opacity: 0.4; }
-      40%            { opacity: 1; }
-    }
-
+    @keyframes dot { 0%, 80%, 100% { opacity: 0.4; } 40% { opacity: 1; } }
     .step-error { font-size: 0.8rem; color: var(--ember); margin-top: 0.75rem; display: none; }
     .step-error.visible { display: block; }
-
-    /* ── Completion ── */
-    .completion {
-      display: none;
-      text-align: center;
-      padding: 3rem 2rem;
-      border: 1px solid var(--green-border);
-      background: var(--green-bg);
-      margin-top: 1rem;
-    }
+    .completion { display: none; text-align: center; padding: 3rem 2rem; border: 1px solid var(--green-border); background: var(--green-bg); margin-top: 1rem; }
     .completion.visible { display: block; }
-
-    .completion h2 {
-      font-family: var(--f-display);
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--paper);
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.02em;
-    }
+    .completion h2 { font-family: var(--f-display); font-size: 1.5rem; font-weight: 700; color: var(--paper); margin-bottom: 0.5rem; letter-spacing: -0.02em; }
     .completion p { color: var(--fog); font-size: 0.95rem; margin-bottom: 2rem; }
+
+    /* Post-provision flow */
+    .post-provision { display: none; margin-top: 2.5rem; }
+    .post-provision.visible { display: block; }
+    .phase { background: var(--ash); border: 1px solid var(--wire); margin-bottom: 1px; }
+    .phase-header { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; }
+    .phase-icon { font-size: 1.25rem; flex-shrink: 0; }
+    .phase-text { flex: 1; }
+    .phase-title { font-weight: 600; font-size: 0.95rem; color: var(--paper); }
+    .phase-sub { font-size: 0.8rem; color: var(--fog); margin-top: 0.15rem; }
+    .phase-status { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.06em; padding: 0.2rem 0.55rem; border: 1px solid var(--wire); color: var(--fog); }
+    .phase-status.running { color: var(--ember); border-color: rgba(200,90,30,0.4); }
+    .phase-status.done    { color: var(--green); border-color: var(--green-border); background: var(--green-bg); }
+    .phase-status.error   { color: #ff6b6b; border-color: rgba(255,107,107,0.4); }
+    .phase-body { display: none; padding: 0 1.5rem 1.5rem; }
+    .phase.active .phase-body { display: block; }
+    .phase-error-msg { font-size: 0.8rem; color: #ff6b6b; margin-top: 0.5rem; line-height: 1.5; }
+    .crawl-input-row { display: flex; gap: 0.75rem; margin-top: 1rem; }
+    .crawl-input-row .field-input { flex: 1; }
+    .skip-link { font-family: var(--f-mono); font-size: 0.68rem; color: var(--fog); cursor: pointer; border: none; background: none; padding: 0; text-decoration: underline; }
+    .skip-link:hover { color: var(--paper); }
   </style>
 </head>
 <body>
@@ -413,7 +149,7 @@
 
     <div class="steps">
 
-      <!-- ── Step 1: GitHub ── -->
+      <!-- Step 1: GitHub -->
       <div class="step active" id="step-github">
         <div class="step-header">
           <div class="step-num" id="num-github">1</div>
@@ -429,52 +165,29 @@
             Create a free account if you don't have one, then generate a Personal Access Token
             so Formaut can create and push your site files.
           </p>
-          <button class="guide-link" onclick="openGuide('github')">
-            📋 Open step-by-step GitHub guide →
-          </button>
+          <button class="guide-link" onclick="openGuide('github')">📋 Open step-by-step GitHub guide →</button>
           <div class="fields">
             <div class="field">
-              <div class="field-label">
-                GitHub username
-                <span class="field-tag plain">Identifier — not a secret</span>
-              </div>
-              <input class="field-input" type="text" id="github_username"
-                placeholder="e.g. maria-santos"
-                autocomplete="off" spellcheck="false">
+              <div class="field-label">GitHub username <span class="field-tag plain">Identifier — not a secret</span></div>
+              <input class="field-input" type="text" id="github_username" placeholder="e.g. maria-santos" autocomplete="off" spellcheck="false">
               <div class="field-hint">Your GitHub profile username — visible in your profile URL.</div>
             </div>
             <div class="field">
-              <div class="field-label">
-                Personal Access Token
-                <span class="field-tag secret">Encrypted on save</span>
-              </div>
-              <!-- type=password prevents browser from logging or autofilling -->
-              <input class="field-input" type="password" id="github_token"
-                placeholder="ghp_••••••••••••••••••••••••••••••••"
-                autocomplete="new-password" spellcheck="false">
-              <div class="field-masked" id="masked-github_token">
-                <span>✓</span> Token saved securely — value not displayed
-              </div>
-              <div class="field-hint">
-                GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) →
-                Generate new token. Scopes needed: <strong>repo</strong>, <strong>workflow</strong>.
-              </div>
+              <div class="field-label">Personal Access Token <span class="field-tag secret">Encrypted on save</span></div>
+              <input class="field-input" type="password" id="github_token" placeholder="ghp_••••••••••••••••••••••••••••••••" autocomplete="new-password" spellcheck="false">
+              <div class="field-masked" id="masked-github_token"><span>✓</span> Token saved securely — value not displayed</div>
+              <div class="field-hint">GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token. Scopes needed: <strong>repo</strong>, <strong>workflow</strong>.</div>
             </div>
           </div>
           <div class="step-actions">
-            <button class="btn-primary" id="btn-github" onclick="saveStep('github')">
-              Save &amp; continue
-            </button>
-            <div class="step-saving" id="saving-github">
-              <div class="saving-dots"><span></span><span></span><span></span></div>
-              Securing your token…
-            </div>
+            <button class="btn-primary" id="btn-github" onclick="saveStep('github')">Save &amp; continue</button>
+            <div class="step-saving" id="saving-github"><div class="saving-dots"><span></span><span></span><span></span></div> Securing your token…</div>
           </div>
           <div class="step-error" id="error-github"></div>
         </div>
       </div>
 
-      <!-- ── Step 2: Cloudflare ── -->
+      <!-- Step 2: Cloudflare -->
       <div class="step locked" id="step-cloudflare">
         <div class="step-header">
           <div class="step-num" id="num-cloudflare">2</div>
@@ -490,55 +203,29 @@
             no bandwidth limits, global CDN, automatic SSL. Create an account, then generate an
             API token with the permissions shown in the guide.
           </p>
-          <button class="guide-link" onclick="openGuide('cloudflare')">
-            📋 Open step-by-step Cloudflare guide →
-          </button>
+          <button class="guide-link" onclick="openGuide('cloudflare')">📋 Open step-by-step Cloudflare guide →</button>
           <div class="fields">
             <div class="field">
-              <div class="field-label">
-                Account ID
-                <span class="field-tag plain">Identifier — not a secret</span>
-              </div>
-              <input class="field-input" type="text" id="cloudflare_account_id"
-                placeholder="32-character hex string"
-                autocomplete="off" spellcheck="false">
-              <div class="field-hint">
-                In Cloudflare: click <strong>Workers &amp; Pages</strong> in the left sidebar.
-                Your Account ID appears in the right sidebar.
-              </div>
+              <div class="field-label">Account ID <span class="field-tag plain">Identifier — not a secret</span></div>
+              <input class="field-input" type="text" id="cloudflare_account_id" placeholder="32-character hex string" autocomplete="off" spellcheck="false">
+              <div class="field-hint">In Cloudflare: click <strong>Workers &amp; Pages</strong> in the left sidebar. Your Account ID appears in the right sidebar.</div>
             </div>
             <div class="field">
-              <div class="field-label">
-                API Token
-                <span class="field-tag secret">Encrypted on save</span>
-              </div>
-              <input class="field-input" type="password" id="cloudflare_token"
-                placeholder="••••••••••••••••••••••••••••••••••••••••"
-                autocomplete="new-password" spellcheck="false">
-              <div class="field-masked" id="masked-cloudflare_token">
-                <span>✓</span> Token saved securely — value not displayed
-              </div>
-              <div class="field-hint">
-                My Profile → API Tokens → Create Token → Edit Cloudflare Workers template →
-                add <strong>Cloudflare Pages: Edit</strong> permission.
-                Set expiry to 1 year.
-              </div>
+              <div class="field-label">API Token <span class="field-tag secret">Encrypted on save</span></div>
+              <input class="field-input" type="password" id="cloudflare_token" placeholder="••••••••••••••••••••••••••••••••••••••••" autocomplete="new-password" spellcheck="false">
+              <div class="field-masked" id="masked-cloudflare_token"><span>✓</span> Token saved securely — value not displayed</div>
+              <div class="field-hint">My Profile → API Tokens → Create Token → Edit Cloudflare Workers template → add <strong>Cloudflare Pages: Edit</strong> permission. Set expiry to 1 year.</div>
             </div>
           </div>
           <div class="step-actions">
-            <button class="btn-primary" id="btn-cloudflare" onclick="saveStep('cloudflare')">
-              Save &amp; continue
-            </button>
-            <div class="step-saving" id="saving-cloudflare">
-              <div class="saving-dots"><span></span><span></span><span></span></div>
-              Securing your token…
-            </div>
+            <button class="btn-primary" id="btn-cloudflare" onclick="saveStep('cloudflare')">Save &amp; continue</button>
+            <div class="step-saving" id="saving-cloudflare"><div class="saving-dots"><span></span><span></span><span></span></div> Securing your token…</div>
           </div>
           <div class="step-error" id="error-cloudflare"></div>
         </div>
       </div>
 
-      <!-- ── Step 3: Supabase ── -->
+      <!-- Step 3: Supabase -->
       <div class="step locked" id="step-supabase">
         <div class="step-header">
           <div class="step-num" id="num-supabase">3</div>
@@ -554,99 +241,160 @@
             <strong>your own Supabase account</strong>. Free tier, 500MB, no credit card required.
             Create an account and generate a Management API token.
           </p>
-          <button class="guide-link" onclick="openGuide('supabase')">
-            📋 Open step-by-step Supabase guide →
-          </button>
+          <button class="guide-link" onclick="openGuide('supabase')">📋 Open step-by-step Supabase guide →</button>
           <div class="fields">
             <div class="field">
-              <div class="field-label">
-                Organization ID
-                <span class="field-tag plain">Identifier — not a secret</span>
-              </div>
-              <input class="field-input" type="text" id="supabase_org_id"
-                placeholder="e.g. abcdefghijkl"
-                autocomplete="off" spellcheck="false">
-              <div class="field-hint">
-                Found in your Supabase URL:
-                supabase.com/dashboard/org/<strong>[this part]</strong>/general
-              </div>
+              <div class="field-label">Organization ID <span class="field-tag plain">Identifier — not a secret</span></div>
+              <input class="field-input" type="text" id="supabase_org_id" placeholder="e.g. abcdefghijkl" autocomplete="off" spellcheck="false">
+              <div class="field-hint">Found in your Supabase URL: supabase.com/dashboard/org/<strong>[this part]</strong>/general</div>
             </div>
             <div class="field">
-              <div class="field-label">
-                Management API Token
-                <span class="field-tag secret">Encrypted on save</span>
-              </div>
-              <input class="field-input" type="password" id="supabase_token"
-                placeholder="sbp_••••••••••••••••••••••••••••••••"
-                autocomplete="new-password" spellcheck="false">
-              <div class="field-masked" id="masked-supabase_token">
-                <span>✓</span> Token saved securely — value not displayed
-              </div>
-              <div class="field-hint">
-                Click your avatar (top right) → <strong>Account</strong> → Access Tokens →
-                Generate new token → name it "Formaut" → set expiry to <strong>Never</strong>.
-              </div>
+              <div class="field-label">Management API Token <span class="field-tag secret">Encrypted on save</span></div>
+              <input class="field-input" type="password" id="supabase_token" placeholder="sbp_••••••••••••••••••••••••••••••••" autocomplete="new-password" spellcheck="false">
+              <div class="field-masked" id="masked-supabase_token"><span>✓</span> Token saved securely — value not displayed</div>
+              <div class="field-hint">Click your avatar (top right) → <strong>Account</strong> → Access Tokens → Generate new token → name it "Formaut" → set expiry to <strong>Never</strong>.</div>
             </div>
           </div>
           <div class="step-actions">
-            <button class="btn-primary" id="btn-supabase" onclick="saveStep('supabase')">
-              Save &amp; finish
-            </button>
-            <div class="step-saving" id="saving-supabase">
-              <div class="saving-dots"><span></span><span></span><span></span></div>
-              Securing your token…
-            </div>
+            <button class="btn-primary" id="btn-supabase" onclick="saveStep('supabase')">Save &amp; finish</button>
+            <div class="step-saving" id="saving-supabase"><div class="saving-dots"><span></span><span></span><span></span></div> Securing your token…</div>
           </div>
           <div class="step-error" id="error-supabase"></div>
         </div>
       </div>
 
-    </div>
+    </div><!-- /steps -->
 
-    <!-- Completion -->
-    <div class="completion" id="completion">
-      <div style="font-size:2rem; margin-bottom:1rem;">✓</div>
-      <h2>Accounts connected.</h2>
-      <p>GitHub, Cloudflare, and Supabase are linked. Formaut is setting up your infrastructure now.</p>
+    <!-- ── POST-PROVISION PHASES ─────────────────────────────────────────────
+         Drives the onboarding state machine after credentials are saved.
+         Each phase is wired to a real API call and transitions the state machine.
+         Phases: provision → crawl (optional) → profile review → build → done
+    ──────────────────────────────────────────────────────────────────────── -->
+    <div class="post-provision" id="post-provision">
 
-      <!-- Provisioning progress — shown while /provision runs -->
-      <div id="provision-progress" style="margin: 1.5rem auto; max-width: 420px; text-align: left; display: none;">
-        <div style="font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;">Setting up your infrastructure</div>
-        <div id="provision-steps" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      <!-- Phase A: Infrastructure provisioning -->
+      <div class="phase active" id="phase-provision">
+        <div class="phase-header">
+          <div class="phase-icon">🏗️</div>
+          <div class="phase-text">
+            <div class="phase-title">Setting up your infrastructure</div>
+            <div class="phase-sub">Creating your GitHub repo, Cloudflare Pages project, and Supabase database</div>
+          </div>
+          <div class="phase-status running" id="phase-provision-status">Running…</div>
+        </div>
+        <div class="phase-body">
+          <div id="provision-steps" style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.83rem;"></div>
+          <div class="phase-error-msg" id="provision-error" style="display:none;"></div>
+        </div>
       </div>
 
-      <!-- Error state -->
-      <div id="provision-error" style="display: none; margin: 1rem auto; max-width: 420px; padding: 0.875rem 1rem; background: #1a0a0a; border: 1px solid #5a1a1a; border-radius: 8px; font-size: 0.85rem; color: #ff6b6b;"></div>
+      <!-- Phase B: Existing site crawl (optional) -->
+      <div class="phase" id="phase-crawl" style="opacity:0.4;">
+        <div class="phase-header">
+          <div class="phase-icon">🔍</div>
+          <div class="phase-text">
+            <div class="phase-title">Scan your existing site</div>
+            <div class="phase-sub" id="phase-crawl-sub">Optional — we'll extract your business info automatically</div>
+          </div>
+          <div class="phase-status" id="phase-crawl-status">Waiting</div>
+        </div>
+        <div class="phase-body">
+          <p style="font-size:0.85rem;color:var(--fog);line-height:1.6;margin-bottom:1rem;">
+            If you have a current website, paste the URL below. Formaut will scan up to 4 pages
+            and pull your business name, hours, services, contact info, brand tone, and more —
+            so you don't have to type it all in manually.
+          </p>
+          <div class="crawl-input-row">
+            <input class="field-input" type="url" id="crawl-url-input" placeholder="https://yourbusiness.com" autocomplete="url" spellcheck="false">
+            <button class="btn-primary" id="crawl-run-btn" onclick="runCrawl()">Scan site</button>
+          </div>
+          <div style="margin-top:0.75rem;display:flex;align-items:center;gap:1rem;">
+            <div id="crawl-status-text" style="font-size:0.8rem;color:var(--fog);display:none;"></div>
+            <button class="skip-link" onclick="skipCrawl()">Skip — I'll enter my info manually</button>
+          </div>
+          <div class="phase-error-msg" id="crawl-error" style="display:none;"></div>
+        </div>
+      </div>
 
-      <button class="btn-primary" id="btn-go-dashboard" onclick="goToDashboard()" style="margin: 1.5rem auto 0; display: none; padding: 0.875rem 2rem;">
-        Go to your dashboard →
-      </button>
-    </div>
+      <!-- Phase C: Profile review -->
+      <div class="phase" id="phase-profile" style="opacity:0.4;">
+        <div class="phase-header">
+          <div class="phase-icon">✅</div>
+          <div class="phase-text">
+            <div class="phase-title">Review your business profile</div>
+            <div class="phase-sub" id="phase-profile-sub">Approve the fields we found before generating your site</div>
+          </div>
+          <div class="phase-status" id="phase-profile-status">Waiting</div>
+        </div>
+        <div class="phase-body">
+          <p style="font-size:0.85rem;color:var(--fog);line-height:1.6;margin-bottom:1rem;" id="phase-profile-body">
+            We extracted your business information. Review and approve the fields before we generate your site.
+          </p>
+          <a class="btn-primary" id="phase-profile-btn" href="/dashboard/business-review.html" style="display:inline-block;text-decoration:none;">Review business profile →</a>
+        </div>
+      </div>
 
-  </div>
+      <!-- Phase D: Site generation -->
+      <div class="phase" id="phase-build" style="opacity:0.4;">
+        <div class="phase-header">
+          <div class="phase-icon">⚡</div>
+          <div class="phase-text">
+            <div class="phase-title">Generate your site</div>
+            <div class="phase-sub">Formaut builds your homepage, SEO, and sitemap</div>
+          </div>
+          <div class="phase-status" id="phase-build-status">Waiting</div>
+        </div>
+        <div class="phase-body">
+          <p style="font-size:0.85rem;color:var(--fog);line-height:1.6;margin-bottom:1rem;">
+            Your business profile is ready. Formaut will generate a complete homepage with
+            copy, layout, and SEO — tailored to your industry and brand voice. This takes about 30 seconds.
+          </p>
+          <button class="btn-primary" id="phase-build-btn" onclick="startSiteGeneration()">Generate my site</button>
+          <div style="margin-top:0.75rem;" id="build-status-row" style="display:none;">
+            <div style="font-size:0.8rem;color:var(--fog);" id="build-status-text"></div>
+          </div>
+          <div class="phase-error-msg" id="build-error" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Phase E: Done -->
+      <div class="phase" id="phase-done" style="opacity:0.4;">
+        <div class="phase-header">
+          <div class="phase-icon">🚀</div>
+          <div class="phase-text">
+            <div class="phase-title">You're all set</div>
+            <div class="phase-sub">Your site is ready — review the draft and publish when you're happy</div>
+          </div>
+          <div class="phase-status" id="phase-done-status">Waiting</div>
+        </div>
+        <div class="phase-body">
+          <p style="font-size:0.85rem;color:var(--fog);line-height:1.6;margin-bottom:1.25rem;">
+            Your site draft is in the review queue. Head to the dashboard to preview it,
+            request changes, and publish it live.
+          </p>
+          <a class="btn-primary" href="/dashboard" style="display:inline-block;text-decoration:none;">Go to your dashboard →</a>
+        </div>
+      </div>
+
+    </div><!-- /post-provision -->
+
+  </div><!-- /page -->
 
   <script>
-    // ── Session context ────────────────────────────────────────────────────────
+    // ── Session ────────────────────────────────────────────────────────────────
     const clientId    = sessionStorage.getItem('fm_client_slug') || '';
     const googleToken = sessionStorage.getItem('fm_google_token') || '';
-
-    // Guard: if no session, redirect to dashboard (which handles auth)
-    if (!googleToken || !clientId) {
-      window.location.href = '/dashboard';
-    }
+    if (!googleToken || !clientId) window.location.href = '/dashboard';
 
     const STEP_ORDER = ['github', 'cloudflare', 'supabase'];
 
-    // ── Step dispatch ──────────────────────────────────────────────────────────
+    // ── Credential saving ──────────────────────────────────────────────────────
     async function saveStep(service) {
       const btn      = document.getElementById(`btn-${service}`);
       const savingEl = document.getElementById(`saving-${service}`);
-      const errorEl  = document.getElementById(`error-${service}`);
-
       clearError(service);
       btn.disabled = true;
       savingEl.classList.add('visible');
-
       try {
         if (service === 'github')     await saveGitHub();
         if (service === 'cloudflare') await saveCloudflare();
@@ -660,81 +408,55 @@
       }
     }
 
-    // ── GitHub ────────────────────────────────────────────────────────────────
     async function saveGitHub() {
       const username = document.getElementById('github_username').value.trim();
       const token    = document.getElementById('github_token').value;
-
       if (!username) throw new Error('Enter your GitHub username.');
       if (!token)    throw new Error('Enter your Personal Access Token.');
-      if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+      if (!token.startsWith('ghp_') && !token.startsWith('github_pat_'))
         throw new Error('Token should start with ghp_ or github_pat_ — check you copied the right value.');
-      }
-
-      // Plain metadata first (username — not a secret)
       await saveMetadata({ github_username: username });
-
-      // Encrypted token
       await saveCredential({ field: 'github_token_enc', secret_value: token });
-
-      // Clear raw value from DOM immediately
       document.getElementById('github_token').value = '';
     }
 
-    // ── Cloudflare ────────────────────────────────────────────────────────────
     async function saveCloudflare() {
       const accountId = document.getElementById('cloudflare_account_id').value.trim();
       const token     = document.getElementById('cloudflare_token').value;
-
       if (!accountId) throw new Error('Enter your Cloudflare Account ID.');
       if (accountId.length < 20) throw new Error('Account ID looks too short — paste the full hex string.');
-      if (!token)     throw new Error('Enter your Cloudflare API Token.');
-
+      if (!token) throw new Error('Enter your Cloudflare API Token.');
       await saveMetadata({ cloudflare_account_id: accountId });
       await saveCredential({ field: 'cloudflare_token_enc', secret_value: token });
-
       document.getElementById('cloudflare_token').value = '';
     }
 
-    // ── Supabase ──────────────────────────────────────────────────────────────
     async function saveSupabase() {
       const orgId = document.getElementById('supabase_org_id').value.trim();
       const token = document.getElementById('supabase_token').value;
-
       if (!orgId) throw new Error('Enter your Supabase Organization ID.');
       if (!token) throw new Error('Enter your Management API Token.');
-      if (!token.startsWith('sbp_')) {
+      if (!token.startsWith('sbp_'))
         throw new Error('Management token should start with sbp_ — check you copied the right value.');
-      }
-
       await saveMetadata({ supabase_org_id: orgId });
       await saveCredential({ field: 'supabase_mgmt_token_enc', secret_value: token });
-
       document.getElementById('supabase_token').value = '';
     }
 
-    // ── API: save encrypted credential ────────────────────────────────────────
     async function saveCredential({ field, secret_value }) {
       const res = await fetch('/api/save-credential', {
         method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${googleToken}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
         body: JSON.stringify({ secret_value, field, client_id: clientId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save credential.');
     }
 
-    // ── API: save plain metadata ───────────────────────────────────────────────
     async function saveMetadata(updates) {
       const res = await fetch('/api/save-metadata', {
         method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${googleToken}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
         body: JSON.stringify({ client_id: clientId, updates }),
       });
       const data = await res.json();
@@ -746,29 +468,18 @@
       const stepEl  = document.getElementById(`step-${service}`);
       const numEl   = document.getElementById(`num-${service}`);
       const badgeEl = document.getElementById(`badge-${service}`);
-
-      // Mask the secret field
-      const tokenFieldMap = {
-        github:     'github_token',
-        cloudflare: 'cloudflare_token',
-        supabase:   'supabase_token',
-      };
+      const tokenFieldMap = { github: 'github_token', cloudflare: 'cloudflare_token', supabase: 'supabase_token' };
       const tokenId = tokenFieldMap[service];
       if (tokenId) {
         document.getElementById(tokenId).style.display = 'none';
         document.getElementById(`masked-${tokenId}`).classList.add('visible');
       }
-
-      // Update card state
       stepEl.classList.remove('active');
       stepEl.classList.add('complete');
       numEl.textContent   = '✓';
       badgeEl.textContent = 'Connected';
-
-      // Advance to next step
       const idx  = STEP_ORDER.indexOf(service);
       const next = STEP_ORDER[idx + 1];
-
       if (next) {
         const nextEl = document.getElementById(`step-${next}`);
         nextEl.classList.remove('locked');
@@ -777,12 +488,10 @@
         updateProgress(idx + 1);
         document.getElementById('step-indicator').textContent = `Step ${idx + 2} of 3`;
       } else {
+        // All three done — start post-provision flow
         updateProgress(3);
-        const completionEl = document.getElementById('completion');
-        completionEl.classList.add('visible');
-        completionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // All 3 steps saved — kick off infrastructure provisioning
-        runProvisioning();
+        document.getElementById('step-indicator').textContent = 'Setting up…';
+        startPostProvisionFlow();
       }
     }
 
@@ -800,31 +509,26 @@
       el.textContent = msg;
       el.classList.add('visible');
     }
-
     function clearError(service) {
-      const el = document.getElementById(`error-${service}`);
-      el.classList.remove('visible');
+      document.getElementById(`error-${service}`).classList.remove('visible');
     }
-
     function openGuide(service) {
       window.open(`/guides/connect-${service}`, '_blank');
     }
 
-    function goToDashboard() {
-      window.location.href = '/dashboard';
+    // ── Onboarding state machine ────────────────────────────────────────────────
+    async function transitionState(nextState) {
+      try {
+        await fetch('/api/onboarding/transition', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+          body: JSON.stringify({ client_id: clientId, next_state: nextState }),
+        });
+      } catch { /* non-fatal — state machine is best-effort */ }
     }
 
-    // ── Provisioning ────────────────────────────────────────────────────────
-    // Called once all 3 credentials are saved. Hits /api/provision which
-    // triggers the platform Worker to create the GitHub repo, Cloudflare Pages
-    // project, and client Supabase project in sequence.
-    //
-    // On success: shows dashboard button.
-    // On partial failure: shows which step failed + still shows dashboard button.
-    //   (Credentials are always saved before provisioning runs — user is never
-    //    blocked from the dashboard if provisioning fails partway.)
-
-    const PROVISION_STEP_LABELS = {
+    // ── Phase A: Infrastructure provisioning ───────────────────────────────────
+    const PROVISION_LABELS = {
       github_repo:      'Creating GitHub repository',
       cloudflare_pages: 'Setting up Cloudflare Pages',
       supabase_project: 'Creating Supabase project',
@@ -836,59 +540,269 @@
 
     function renderProvisionStep(step, status, detail) {
       const icon  = { ok: '✓', running: '…', failed: '✗', error: '✗' }[status] || '·';
-      const color = { ok: '#4ade80', running: '#888', failed: '#ff6b6b', error: '#ff6b6b' }[status] || '#888';
-      const label = PROVISION_STEP_LABELS[step] || step;
-      return `<div style="display:flex;align-items:flex-start;gap:0.625rem;font-size:0.85rem;line-height:1.4;">
+      const color = { ok: 'var(--green)', running: 'var(--fog)', failed: '#ff6b6b', error: '#ff6b6b' }[status] || 'var(--fog)';
+      const label = PROVISION_LABELS[step] || step;
+      return `<div style="display:flex;align-items:flex-start;gap:0.625rem;line-height:1.4;">
         <span style="color:${color};font-weight:700;min-width:1rem;margin-top:1px;">${icon}</span>
-        <span>${label}${detail ? `<span style="color:#888;font-size:0.78rem;display:block;">${detail}</span>` : ''}</span>
+        <span>${label}${detail ? `<span style="color:var(--fog);font-size:0.78rem;display:block;">${detail}</span>` : ''}</span>
       </div>`;
     }
 
-    async function runProvisioning() {
-      const progressEl = document.getElementById('provision-progress');
-      const stepsEl    = document.getElementById('provision-steps');
-      const errorEl    = document.getElementById('provision-error');
-      const btnEl      = document.getElementById('btn-go-dashboard');
+    async function startPostProvisionFlow() {
+      const ppEl = document.getElementById('post-provision');
+      ppEl.classList.add('visible');
+      ppEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      progressEl.style.display = 'block';
+      await transitionState('provisioning');
+
+      const stepsEl  = document.getElementById('provision-steps');
+      const statusEl = document.getElementById('phase-provision-status');
+      const errorEl  = document.getElementById('provision-error');
       stepsEl.innerHTML = renderProvisionStep('github_repo', 'running');
 
       let result;
       try {
         const res = await fetch('/api/provision', {
-          method:  'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${googleToken}`,
-          },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
           body: JSON.stringify({ client_id: clientId }),
         });
         result = await res.json();
       } catch (err) {
-        progressEl.style.display = 'none';
-        errorEl.textContent = `Could not reach provisioning service — your credentials are saved. Continue to the dashboard and provisioning can be retried from there. (${err.message})`;
+        statusEl.textContent = 'Error';
+        statusEl.className = 'phase-status error';
+        errorEl.textContent = `Could not reach provisioning service — your credentials are saved. Continue to the dashboard and retry from there. (${err.message})`;
         errorEl.style.display = 'block';
-        btnEl.style.display   = 'block';
+        activatePhase('crawl');
         return;
       }
 
-      // Render all completed steps with their final status
       if (Array.isArray(result.steps) && result.steps.length) {
-        stepsEl.innerHTML = result.steps
-          .map(s => renderProvisionStep(s.step, s.status, s.detail))
-          .join('');
+        stepsEl.innerHTML = result.steps.map(s => renderProvisionStep(s.step, s.status, s.detail)).join('');
       }
 
       if (result.ok) {
-        btnEl.style.display = 'block';
+        statusEl.textContent = 'Done';
+        statusEl.className = 'phase-status done';
+        await transitionState('provisioned');
+        activatePhase('crawl');
       } else {
-        const failedAt = result.failed_at || 'unknown step';
-        const label    = PROVISION_STEP_LABELS[failedAt] || failedAt;
-        errorEl.textContent = `Stopped at: ${label}. Your credentials are saved — continue to the dashboard to retry or provision manually.`;
+        statusEl.textContent = 'Partial';
+        statusEl.className = 'phase-status error';
+        const failedAt = PROVISION_LABELS[result.failed_at] || result.failed_at || 'unknown step';
+        errorEl.textContent = `Stopped at: ${failedAt}. Credentials are saved — the dashboard lets you retry.`;
         errorEl.style.display = 'block';
-        btnEl.style.display   = 'block';
+        activatePhase('crawl');  // Let them continue regardless
       }
     }
+
+    // ── Phase B: Crawl ─────────────────────────────────────────────────────────
+    function activatePhase(phase) {
+      const el = document.getElementById(`phase-${phase}`);
+      el.style.opacity = '1';
+      el.classList.add('active');
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const statusEl = document.getElementById(`phase-${phase}-status`);
+      if (statusEl) { statusEl.textContent = 'Ready'; statusEl.className = 'phase-status running'; }
+    }
+
+    async function runCrawl() {
+      const urlInput  = document.getElementById('crawl-url-input');
+      const runBtn    = document.getElementById('crawl-run-btn');
+      const statusTxt = document.getElementById('crawl-status-text');
+      const errorEl   = document.getElementById('crawl-error');
+      const url = urlInput.value.trim();
+      if (!url) { errorEl.textContent = 'Enter a URL to scan.'; errorEl.style.display = 'block'; return; }
+      errorEl.style.display = 'none';
+      runBtn.disabled = true;
+      statusTxt.textContent = 'Scanning — this takes about 15 seconds…';
+      statusTxt.style.display = 'block';
+
+      await transitionState('crawl_running');
+
+      try {
+        const res = await fetch('/api/crawl/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+          body: JSON.stringify({ client_id: clientId, url, persist_crawl: true, limit: 4 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Crawl failed');
+
+        statusTxt.textContent = `Found ${data.crawl?.pages_crawled || 0} pages.`;
+        await transitionState('crawl_complete');
+
+        const statusEl = document.getElementById('phase-crawl-status');
+        statusEl.textContent = 'Done';
+        statusEl.className = 'phase-status done';
+        document.getElementById('phase-crawl').classList.remove('active');
+
+        // Store crawl result in session so business-review can use it
+        if (data.crawl) sessionStorage.setItem('fm_crawl_result', JSON.stringify(data.crawl));
+
+        await transitionState('profile_review_pending');
+        activateProfilePhase(true);
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+        runBtn.disabled = false;
+        statusTxt.style.display = 'none';
+      }
+    }
+
+    async function skipCrawl() {
+      document.getElementById('phase-crawl-status').textContent = 'Skipped';
+      document.getElementById('phase-crawl-status').className = 'phase-status';
+      document.getElementById('phase-crawl').classList.remove('active');
+      document.getElementById('phase-crawl').style.opacity = '0.5';
+      await transitionState('profile_review_pending');
+      activateProfilePhase(false);
+    }
+
+    // ── Phase C: Profile review ────────────────────────────────────────────────
+    function activateProfilePhase(hasCrawl) {
+      const el = document.getElementById('phase-profile');
+      el.style.opacity = '1';
+      el.classList.add('active');
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const statusEl = document.getElementById('phase-profile-status');
+      statusEl.textContent = 'Ready';
+      statusEl.className = 'phase-status running';
+      const bodyEl = document.getElementById('phase-profile-body');
+      if (hasCrawl) {
+        bodyEl.textContent = 'We extracted your business information from your existing site. Review and approve the fields before we generate your new site.';
+        document.getElementById('phase-profile-btn').href = '/dashboard/business-review.html?from=onboarding';
+      } else {
+        bodyEl.textContent = 'Enter your business details manually — name, services, contact info, brand voice. This is what Formaut uses to generate your site.';
+        document.getElementById('phase-profile-btn').href = '/dashboard/business-review.html?from=onboarding&manual=1';
+      }
+    }
+
+    // ── Phase D: Site generation ────────────────────────────────────────────────
+    // Called from business-review.html after profile is approved (via postMessage or URL param)
+    async function startSiteGeneration() {
+      const btn     = document.getElementById('phase-build-btn');
+      const statusEl = document.getElementById('phase-build-status');
+      const statusTxt = document.getElementById('build-status-text');
+      const errorEl = document.getElementById('build-error');
+      btn.disabled = true;
+      btn.textContent = 'Queuing…';
+      statusEl.textContent = 'Running';
+      statusEl.className = 'phase-status running';
+      errorEl.style.display = 'none';
+
+      await transitionState('site_generation_in_progress');
+
+      try {
+        const res = await fetch('/api/jobs/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+          body: JSON.stringify({
+            client_slug: clientId,
+            job_type: 'generate_homepage',
+            priority: 80,
+            created_by: 'onboarding',
+            payload: { trigger: 'onboarding', requires_review_before_publish: true },
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not queue generation job');
+
+        // Also queue SEO artifact
+        await fetch('/api/jobs/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+          body: JSON.stringify({
+            client_slug: clientId,
+            job_type: 'generate_seo',
+            priority: 70,
+            created_by: 'onboarding',
+            payload: { trigger: 'onboarding' },
+          }),
+        }).catch(() => {});
+
+        sessionStorage.setItem('fm_build_job_id', data.job?.id || '');
+        statusTxt.textContent = 'Generating your site — this takes about 30 seconds.';
+        statusTxt.style.display = 'block';
+        document.getElementById('build-status-row').style.display = 'block';
+        pollBuildJob(data.job?.id);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Generate my site';
+        statusEl.textContent = 'Error';
+        statusEl.className = 'phase-status error';
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function pollBuildJob(jobId) {
+      if (!jobId) {
+        // No job ID — just go to done after a brief wait
+        setTimeout(() => completeBuild(), 3000);
+        return;
+      }
+      let attempts = 0;
+      const timer = setInterval(async () => {
+        attempts++;
+        if (attempts > 60) { clearInterval(timer); completeBuild(); return; } // 5 min timeout
+        try {
+          const res = await fetch('/api/jobs/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${googleToken}` },
+            body: JSON.stringify({ job_id: jobId, client_slug: clientId }),
+          });
+          const data = await res.json();
+          const status = data.job?.status || data.status;
+          if (status === 'succeeded') { clearInterval(timer); completeBuild(); }
+          else if (status === 'failed') {
+            clearInterval(timer);
+            document.getElementById('build-error').textContent = 'Generation job failed — head to the dashboard to retry.';
+            document.getElementById('build-error').style.display = 'block';
+            completeBuild(); // Still advance — they can retry from dashboard
+          }
+        } catch { /* polling failure — keep trying */ }
+      }, 5000);
+    }
+
+    async function completeBuild() {
+      const statusEl = document.getElementById('phase-build-status');
+      statusEl.textContent = 'Done';
+      statusEl.className = 'phase-status done';
+      document.getElementById('phase-build').classList.remove('active');
+      await transitionState('site_generation_review');
+      activateDonePhase();
+    }
+
+    // ── Phase E: Done ──────────────────────────────────────────────────────────
+    function activateDonePhase() {
+      const el = document.getElementById('phase-done');
+      el.style.opacity = '1';
+      el.classList.add('active');
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const statusEl = document.getElementById('phase-done-status');
+      statusEl.textContent = 'Ready';
+      statusEl.className = 'phase-status done';
+    }
+
+    // ── Handle return from business-review.html ────────────────────────────────
+    // business-review.html sets sessionStorage item when profile review is complete
+    window.addEventListener('focus', () => {
+      const reviewDone = sessionStorage.getItem('fm_profile_review_done');
+      if (reviewDone === clientId) {
+        sessionStorage.removeItem('fm_profile_review_done');
+        // Profile approved — activate build phase if it's still waiting
+        const buildPhase = document.getElementById('phase-build');
+        if (buildPhase && buildPhase.style.opacity === '0.4') {
+          document.getElementById('phase-profile-status').textContent = 'Done';
+          document.getElementById('phase-profile-status').className = 'phase-status done';
+          document.getElementById('phase-profile').classList.remove('active');
+          buildPhase.style.opacity = '1';
+          buildPhase.classList.add('active');
+          buildPhase.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
   </script>
 </body>
 </html>

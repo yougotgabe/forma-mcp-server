@@ -64,6 +64,9 @@ function maybeShowConnectionArtifact(userMessage) {
       if (clientCtx.recent_sessions.length > 0) {
         renderSessionList(clientCtx.recent_sessions);
       }
+
+      // Check if client is ready for a first build
+      if (typeof initBuildTrigger === 'function') initBuildTrigger();
     }
 
     function renderSessionList(sessions) {
