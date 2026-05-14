@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formaut — Crawl Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard/assets/css/business-review.css" />
+</head>
+<body>
+
+  <div class="page-shell">
+
+    <!-- ── Back link ─────────────────────────────────────────────────────── -->
+    <a href="/dashboard.html" class="back-link">← Dashboard</a>
+
+    <!-- ── Header ────────────────────────────────────────────────────────── -->
+    <header class="page-header">
+      <p class="eyebrow">Onboarding · Step 2</p>
+      <h1>What did we find?</h1>
+      <p class="lead">We crawled your existing website and extracted everything useful. Review each finding below — approve what's right, correct what's off, and skip anything irrelevant. Only approved fields get written into your business profile and used to generate your new site.</p>
+    </header>
+
+    <!-- ── Crawl trigger (shown when no crawl has run yet) ───────────────── -->
+    <section class="crawl-trigger-zone" id="crawl-trigger-zone">
+      <div class="crawl-trigger-card">
+        <div class="crawl-icon">🔍</div>
+        <h2>Run the website crawl</h2>
+        <p>Enter your current website URL to extract business information automatically.</p>
+        <div class="crawl-input-row">
+          <input
+            type="url"
+            id="crawl-url-input"
+            placeholder="https://yourbusiness.com"
+            autocomplete="url"
+            spellcheck="false"
+          />
+          <button class="btn-primary" id="crawl-run-btn" onclick="runCrawl()">
+            <span id="crawl-btn-label">Crawl site</span>
+          </button>
+        </div>
+        <p class="hint" id="crawl-hint">We'll scan up to 4 pages. This takes about 10–20 seconds.</p>
+      </div>
+    </section>
+
+    <!-- ── Progress / status bar ─────────────────────────────────────────── -->
+    <div class="status-bar" id="status-bar" style="display:none">
+      <div class="status-inner">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Loading…</span>
+      </div>
+      <div class="status-meta" id="status-meta"></div>
+    </div>
+
+    <!-- ── Review workspace (shown after crawl) ──────────────────────────── -->
+    <div class="review-workspace" id="review-workspace" style="display:none">
+
+      <!-- Summary strip -->
+      <div class="summary-strip" id="summary-strip"></div>
+
+      <!-- Field buckets -->
+      <div class="bucket-grid">
+
+        <section class="bucket" id="bucket-identity">
+          <div class="bucket-header">
+            <span class="bucket-badge identity">Core identity</span>
+            <span class="bucket-count" id="count-identity">—</span>
+          </div>
+          <div class="field-list" id="fields-identity"></div>
+        </section>
+
+        <section class="bucket" id="bucket-contact">
+          <div class="bucket-header">
+            <span class="bucket-badge contact">Contact &amp; location</span>
+            <span class="bucket-count" id="count-contact">—</span>
+          </div>
+          <div class="field-list" id="fields-contact"></div>
+        </section>
+
+        <section class="bucket" id="bucket-services">
+          <div class="bucket-header">
+            <span class="bucket-badge services">Services &amp; offerings</span>
+            <span class="bucket-count" id="count-services">—</span>
+          </div>
+          <div class="field-list" id="fields-services"></div>
+        </section>
+
+        <section class="bucket" id="bucket-brand">
+          <div class="bucket-header">
+            <span class="bucket-badge brand">Brand &amp; voice</span>
+            <span class="bucket-count" id="count-brand">—</span>
+          </div>
+          <div class="field-list" id="fields-brand"></div>
+        </section>
+
+        <section class="bucket" id="bucket-uncertain">
+          <div class="bucket-header">
+            <span class="bucket-badge uncertain">Uncertain — needs your input</span>
+            <span class="bucket-count" id="count-uncertain">—</span>
+          </div>
+          <div class="field-list" id="fields-uncertain"></div>
+        </section>
+
+        <section class="bucket warn" id="bucket-contradictions">
+          <div class="bucket-header">
+            <span class="bucket-badge contradictions">Contradictions</span>
+            <span class="bucket-count" id="count-contradictions">—</span>
+          </div>
+          <div class="field-list" id="fields-contradictions"></div>
+        </section>
+
+      </div>
+
+      <!-- Commit bar -->
+      <div class="commit-bar" id="commit-bar">
+        <div class="commit-summary" id="commit-summary">0 fields approved</div>
+        <div class="commit-actions">
+          <button class="btn-ghost" onclick="approveAll()">Approve all high-confidence</button>
+          <button class="btn-primary" id="commit-btn" onclick="commitApproved()" disabled>
+            Save to profile →
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /review-workspace -->
+
+  </div><!-- /page-shell -->
+
+  <script src="/dashboard/assets/js/business-review.js"></script>
+</body>
+</html>
